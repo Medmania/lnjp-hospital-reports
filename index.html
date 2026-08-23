@@ -548,318 +548,394 @@
     </div>
   </div>
 
-  <script>
-    const SUPABASE_URL = "https://leytpfrbrvrsihowgcwg.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxleXRwZnJicnZyc2lob3dnY3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDgyMzAsImV4cCI6MjEwMjI4NDIzMH0.rkR4Ndf7eyhwOKcWdPcfVV4dsaIaNpLvIUpFf63_W9E";
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9qjLCPhAXlJwDMas5ydr7_WfryVV78EUxr3mo3pb2-DW6sxRoH95FQUlWqfFyhdS6ng/exec";
-   
-    const _supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    let selectedReports = new Map();
-    let currentlyFilteredRecords = [];
-    let currentUser = null;
-    let currentProfile = null;
-    let rawRecords = [];
-    let selectedFiles = [];
-    let activeWindowFilter = "ALL";
-    let activeDeptFilter = "ALL";
-    let activeDateFilter = "ALL";
-    let currentZoom = 1;
-    let currentRotation = 0;
-    let departmentList = [];
-    let windowList = [];
+ <script>
+  const SUPABASE_URL = "https://leytpfrbrvrsihowgcwg.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxleXRwZnJicnZyc2lob3dnY3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDgyMzAsImV4cCI6MjEwMjI4NDIzMH0.rkR4Ndf7eyhwOKcWdPcfVV4dsaIaNpLvIUpFf63_W9E";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9qjLCPhAXlJwDMas5ydr7_WfryVV78EUxr3mo3pb2-DW6sxRoH95FQUlWqfFyhdS6ng/exec";
 
-    const DEFAULT_DEPTS = ["Med EM", "Sx EM", "PICU", "CLR", "W14", "Ortho EM", "ICU", "Other"];
-    const DEFAULT_WINDOWS = ["Window 1", "Window 2"];
+  // ===== IMPORTANT: mobile-friendly client options =====
+  const _supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      detectSessionInUrl: true,      // critical for mobile OAuth
+      flowType: 'pkce',              // recommended for mobile / SPA
+      persistSession: true,
+      autoRefreshToken: true,
+      storage: window.localStorage
+    }
+  });
 
-    window.addEventListener('DOMContentLoaded', () => {
-      _supabaseClient.auth.onAuthStateChange((event, session) => {
-        checkUserSession();
-      });
-      checkUserSession();
-    });
+  let selectedReports = new Map();
+  let currentlyFilteredRecords = [];
+  let currentUser = null;
+  let currentProfile = null;
+  let rawRecords = [];
+  let selectedFiles = [];
+  let activeWindowFilter = "ALL";
+  let activeDeptFilter = "ALL";
+  let activeDateFilter = "ALL";
+  let currentZoom = 1;
+  let currentRotation = 0;
+  let departmentList = [];
+  let windowList = [];
 
-    function getDirectImageUrl(url) {
-      if (!url) return '';
-      const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url).match(/id=([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  const DEFAULT_DEPTS = ["Med EM", "Sx EM", "PICU", "CLR", "W14", "Ortho EM", "ICU", "Other"];
+  const DEFAULT_WINDOWS = ["Window 1", "Window 2"];
+
+  // ---------- AUTH INITIALIZATION ----------
+  window.addEventListener('DOMContentLoaded', async () => {
+    // Listen for auth changes (including the OAuth callback)
+    _supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        await checkUserSession();
       }
-      return url;
-    }
-
-    // ---------- DEPARTMENTS ----------
-    async function loadDepartments() {
-      try {
-        const { data, error } = await _supabaseClient.from('departments').select('name').order('name');
-        if (error || !data || data.length === 0) {
-          departmentList = [...DEFAULT_DEPTS];
-        } else {
-          departmentList = data.map(d => d.name);
-        }
-      } catch (e) {
-        departmentList = [...DEFAULT_DEPTS];
-      }
-      // Ensure "Other" always exists
-      if (!departmentList.includes("Other")) departmentList.push("Other");
-      renderDeptChips();
-      renderRegDepartmentSelect();
-      if (currentProfile?.role === 'admin') renderDeptAdminList();
-    }
-
-    function renderDeptChips() {
-      const container = document.getElementById('deptChips');
-      if (!container) return;
-      let html = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Dept:</span>
-                  <div class="chip ${activeDeptFilter === 'ALL' ? 'active' : ''}" onclick="setDeptFilter('ALL', this)">All</div>`;
-      departmentList.forEach(dept => {
-        html += `<div class="chip ${activeDeptFilter === dept ? 'active' : ''}" onclick="setDeptFilter('${dept}', this)">${dept}</div>`;
-      });
-      container.innerHTML = html;
-    }
-
-    function renderRegDepartmentSelect() {
-      const select = document.getElementById('regDepartment');
-      if (!select) return;
-      select.innerHTML = departmentList.map(d => `<option value="${d}">${d}</option>`).join('');
-    }
-
-    function renderDeptAdminList() {
-      const container = document.getElementById('deptListContainer');
-      if (!container) return;
-      if (departmentList.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted);">No departments yet.</p>';
-        return;
-      }
-      container.innerHTML = departmentList.map(dept => `
-        <div class="dept-list-item">
-          <span>${dept}</span>
-          <button class="btn-table btn-delete-dept" onclick="deleteDepartment('${dept}')"><i class="fa-solid fa-trash"></i> Delete</button>
-        </div>
-      `).join('');
-    }
-
-    async function addDepartment() {
-      const input = document.getElementById('newDeptName');
-      const name = (input.value || '').trim();
-      if (!name) return alert('Enter a department name');
-      if (departmentList.includes(name)) return alert('Department already exists');
-      try {
-        const { error } = await _supabaseClient.from('departments').insert({ name });
-        if (error) throw error;
-        input.value = '';
-        await loadDepartments();
-      } catch (e) {
-        departmentList.push(name);
-        departmentList.sort();
-        renderDeptChips();
-        renderRegDepartmentSelect();
-        renderDeptAdminList();
-      }
-    }
-
-    async function deleteDepartment(name) {
-      if (name === "Other") return alert('"Other" cannot be deleted.');
-      if (!confirm(`Delete department "${name}"?`)) return;
-      try {
-        const { error } = await _supabaseClient.from('departments').delete().eq('name', name);
-        if (error) throw error;
-        await loadDepartments();
-      } catch (e) {
-        departmentList = departmentList.filter(d => d !== name);
-        renderDeptChips();
-        renderRegDepartmentSelect();
-        renderDeptAdminList();
-      }
-    }
-
-    // ---------- WINDOWS (NEW) ----------
-    async function loadWindows() {
-      try {
-        const { data, error } = await _supabaseClient.from('windows').select('name').order('name');
-        if (error || !data || data.length === 0) {
-          windowList = [...DEFAULT_WINDOWS];
-        } else {
-          windowList = data.map(w => w.name);
-        }
-      } catch (e) {
-        windowList = [...DEFAULT_WINDOWS];
-      }
-      renderWindowChips();
-      renderUploadWindowSelect();
-      if (currentProfile?.role === 'admin') renderWindowAdminList();
-    }
-
-    function renderWindowChips() {
-      const container = document.getElementById('windowChips');
-      if (!container) return;
-      let html = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Window:</span>
-                  <div class="chip ${activeWindowFilter === 'ALL' ? 'active' : ''}" onclick="setWindowFilter('ALL', this)">All</div>`;
-      windowList.forEach(w => {
-        html += `<div class="chip ${activeWindowFilter === w ? 'active' : ''}" onclick="setWindowFilter('${w}', this)">${w}</div>`;
-      });
-      container.innerHTML = html;
-    }
-
-    function renderUploadWindowSelect() {
-      const select = document.getElementById('uploadWindowType');
-      if (!select) return;
-      select.innerHTML = windowList.map(w => `<option value="${w}">${w}</option>`).join('');
-    }
-
-    function renderWindowAdminList() {
-      const container = document.getElementById('windowListContainer');
-      if (!container) return;
-      if (windowList.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted);">No windows yet.</p>';
-        return;
-      }
-      container.innerHTML = windowList.map(w => `
-        <div class="dept-list-item">
-          <span>${w}</span>
-          <button class="btn-table btn-delete-dept" onclick="deleteWindow('${w}')"><i class="fa-solid fa-trash"></i> Delete</button>
-        </div>
-      `).join('');
-    }
-
-    async function addWindow() {
-      const input = document.getElementById('newWindowName');
-      const name = (input.value || '').trim();
-      if (!name) return alert('Enter a window name');
-      if (windowList.includes(name)) return alert('Window already exists');
-      try {
-        const { error } = await _supabaseClient.from('windows').insert({ name });
-        if (error) throw error;
-        input.value = '';
-        await loadWindows();
-      } catch (e) {
-        // fallback local
-        windowList.push(name);
-        windowList.sort();
-        renderWindowChips();
-        renderUploadWindowSelect();
-        renderWindowAdminList();
-      }
-    }
-
-    async function deleteWindow(name) {
-      if (!confirm(`Delete window "${name}"? Existing reports will keep their old window label.`)) return;
-      try {
-        const { error } = await _supabaseClient.from('windows').delete().eq('name', name);
-        if (error) throw error;
-        await loadWindows();
-      } catch (e) {
-        windowList = windowList.filter(w => w !== name);
-        renderWindowChips();
-        renderUploadWindowSelect();
-        renderWindowAdminList();
-      }
-    }
-
-    // ---------- AUTH & PROFILE ----------
-    async function checkUserSession() {
-      try {
-        const { data: { session }, error: sessionError } = await _supabaseClient.auth.getSession();
-        if (sessionError || !session) {
-          showView('view-login');
-          return;
-        }
-        currentUser = session.user;
-        const { data: profile } = await _supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
-        if (!profile) {
-          await loadDepartments();
-          showView('view-onboarding');
-          return;
-        }
-        currentProfile = profile;
-        if (profile.status === 'pending') {
-          showView('view-pending');
-          return;
-        }
-        if (profile.status === 'rejected') {
-          document.getElementById('pendingMsg').innerText = "Your access request was not approved. Contact Administrator.";
-          showView('view-pending');
-          return;
-        }
-        setupMainApp();
-      } catch (e) {
-        console.error("Session check error:", e);
+      if (event === 'SIGNED_OUT') {
         showView('view-login');
       }
-    }
+    });
 
-    function showView(viewId) {
-      ['view-login', 'view-onboarding', 'view-pending', 'view-main'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = (id === viewId) ? 'block' : 'none';
-      });
-      const logoutBtn = document.getElementById('btnLogout');
-      if (logoutBtn) logoutBtn.style.display = (viewId === 'view-login') ? 'none' : 'inline-flex';
-    }
+    // Also run once on load (handles both normal load + OAuth redirect)
+    await checkUserSession();
+  });
 
-    async function loginWithGoogle() {
-      try {
-        await _supabaseClient.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: window.location.href.split('#')[0] }
-        });
-      } catch (err) {
-        alert("Login error: " + err.message);
+  function getDirectImageUrl(url) {
+    if (!url) return '';
+    const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url).match(/id=([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+    return url;
+  }
+
+  // ---------- DEPARTMENTS ----------
+  async function loadDepartments() {
+    try {
+      const { data, error } = await _supabaseClient.from('departments').select('name').order('name');
+      if (error || !data || data.length === 0) {
+        departmentList = [...DEFAULT_DEPTS];
+      } else {
+        departmentList = data.map(d => d.name);
       }
+    } catch (e) {
+      departmentList = [...DEFAULT_DEPTS];
     }
+    if (!departmentList.includes("Other")) departmentList.push("Other");
+    renderDeptChips();
+    renderRegDepartmentSelect();
+    if (currentProfile?.role === 'admin') renderDeptAdminList();
+  }
 
-    async function logout() {
-      await _supabaseClient.auth.signOut();
-      window.location.reload();
+  function renderDeptChips() {
+    const container = document.getElementById('deptChips');
+    if (!container) return;
+    let html = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Dept:</span>
+                <div class="chip ${activeDeptFilter === 'ALL' ? 'active' : ''}" onclick="setDeptFilter('ALL', this)">All</div>`;
+    departmentList.forEach(dept => {
+      html += `<div class="chip ${activeDeptFilter === dept ? 'active' : ''}" onclick="setDeptFilter('${dept}', this)">${dept}</div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function renderRegDepartmentSelect() {
+    const select = document.getElementById('regDepartment');
+    if (!select) return;
+    select.innerHTML = departmentList.map(d => `<option value="${d}">${d}</option>`).join('');
+  }
+
+  function renderDeptAdminList() {
+    const container = document.getElementById('deptListContainer');
+    if (!container) return;
+    if (departmentList.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-muted);">No departments yet.</p>';
+      return;
     }
+    container.innerHTML = departmentList.map(dept => `
+      <div class="dept-list-item">
+        <span>${dept}</span>
+        <button class="btn-table btn-delete-dept" onclick="deleteDepartment('${dept}')"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+    `).join('');
+  }
 
-    async function submitProfile() {
-      const fullName = document.getElementById('regFullName').value.trim();
-      const designation = document.getElementById('regDesignation').value;
-      const department = document.getElementById('regDepartment').value;
-      if (!fullName) return alert("Please enter your Full Name");
-      const { error } = await _supabaseClient.from('profiles').upsert({
-        id: currentUser.id,
-        email: currentUser.email,
-        full_name: fullName,
-        designation: designation,
-        department: department,
-        role: 'viewer',
-        status: 'pending'
-      });
-      if (error) alert("Error saving profile: " + error.message);
-      else checkUserSession();
+  async function addDepartment() {
+    const input = document.getElementById('newDeptName');
+    const name = (input.value || '').trim();
+    if (!name) return alert('Enter a department name');
+    if (departmentList.includes(name)) return alert('Department already exists');
+    try {
+      const { error } = await _supabaseClient.from('departments').insert({ name });
+      if (error) throw error;
+      input.value = '';
+      await loadDepartments();
+    } catch (e) {
+      departmentList.push(name);
+      departmentList.sort();
+      renderDeptChips();
+      renderRegDepartmentSelect();
+      renderDeptAdminList();
     }
+  }
 
-    function setupMainApp() {
-      showView('view-main');
-      const navInfo = document.getElementById('navUserInfo');
-      if (navInfo) {
-        navInfo.style.display = 'inline';
-        navInfo.innerText = `${currentProfile.full_name || 'Staff'} (${String(currentProfile.role || 'viewer').toUpperCase()})`;
+  async function deleteDepartment(name) {
+    if (name === "Other") return alert('"Other" cannot be deleted.');
+    if (!confirm(`Delete department "${name}"?`)) return;
+    try {
+      const { error } = await _supabaseClient.from('departments').delete().eq('name', name);
+      if (error) throw error;
+      await loadDepartments();
+    } catch (e) {
+      departmentList = departmentList.filter(d => d !== name);
+      renderDeptChips();
+      renderRegDepartmentSelect();
+      renderDeptAdminList();
+    }
+  }
+
+  // ---------- WINDOWS ----------
+  async function loadWindows() {
+    try {
+      const { data, error } = await _supabaseClient.from('windows').select('name').order('name');
+      if (error || !data || data.length === 0) {
+        windowList = [...DEFAULT_WINDOWS];
+      } else {
+        windowList = data.map(w => w.name);
       }
-      if (currentProfile.role === 'admin') {
-        const adminTab = document.getElementById('tabBtnAdmin');
-        if (adminTab) adminTab.style.display = 'flex';
-        loadAdminUsers();
+    } catch (e) {
+      windowList = [...DEFAULT_WINDOWS];
+    }
+    renderWindowChips();
+    renderUploadWindowSelect();
+    if (currentProfile?.role === 'admin') renderWindowAdminList();
+  }
+
+  function renderWindowChips() {
+    const container = document.getElementById('windowChips');
+    if (!container) return;
+    let html = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Window:</span>
+                <div class="chip ${activeWindowFilter === 'ALL' ? 'active' : ''}" onclick="setWindowFilter('ALL', this)">All</div>`;
+    windowList.forEach(w => {
+      html += `<div class="chip ${activeWindowFilter === w ? 'active' : ''}" onclick="setWindowFilter('${w}', this)">${w}</div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function renderUploadWindowSelect() {
+    const select = document.getElementById('uploadWindowType');
+    if (!select) return;
+    select.innerHTML = windowList.map(w => `<option value="${w}">${w}</option>`).join('');
+  }
+
+  function renderWindowAdminList() {
+    const container = document.getElementById('windowListContainer');
+    if (!container) return;
+    if (windowList.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-muted);">No windows yet.</p>';
+      return;
+    }
+    container.innerHTML = windowList.map(w => `
+      <div class="dept-list-item">
+        <span>${w}</span>
+        <button class="btn-table btn-delete-dept" onclick="deleteWindow('${w}')"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+    `).join('');
+  }
+
+  async function addWindow() {
+    const input = document.getElementById('newWindowName');
+    const name = (input.value || '').trim();
+    if (!name) return alert('Enter a window name');
+    if (windowList.includes(name)) return alert('Window already exists');
+    try {
+      const { error } = await _supabaseClient.from('windows').insert({ name });
+      if (error) throw error;
+      input.value = '';
+      await loadWindows();
+    } catch (e) {
+      windowList.push(name);
+      windowList.sort();
+      renderWindowChips();
+      renderUploadWindowSelect();
+      renderWindowAdminList();
+    }
+  }
+
+  async function deleteWindow(name) {
+    if (!confirm(`Delete window "${name}"? Existing reports will keep their old window label.`)) return;
+    try {
+      const { error } = await _supabaseClient.from('windows').delete().eq('name', name);
+      if (error) throw error;
+      await loadWindows();
+    } catch (e) {
+      windowList = windowList.filter(w => w !== name);
+      renderWindowChips();
+      renderUploadWindowSelect();
+      renderWindowAdminList();
+    }
+  }
+
+  // ---------- AUTH & PROFILE (FIXED FOR MOBILE) ----------
+  async function checkUserSession() {
+    try {
+      // Clean any leftover auth params from the URL after successful login
+      if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+        // Let Supabase finish processing, then clean the URL
+        setTimeout(() => {
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }, 800);
       }
-      if (currentProfile.role === 'viewer') {
-        const uploadCard = document.getElementById('uploadDeskCard');
-        if (uploadCard) {
-          uploadCard.innerHTML = `
-            <div style="text-align: center; padding: 40px 10px; color: var(--text-muted);">
-              <i class="fa-solid fa-lock" style="font-size: 2.5rem; margin-bottom: 12px;"></i>
-              <h3>Upload Restricted</h3>
-              <p>You have Viewer access. Contact the administrator to grant you Editor role for uploads.</p>
-            </div>
-          `;
+
+      const { data: { session }, error: sessionError } = await _supabaseClient.auth.getSession();
+
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        showView('view-login');
+        return;
+      }
+
+      if (!session) {
+        showView('view-login');
+        return;
+      }
+
+      currentUser = session.user;
+
+      // Load profile
+      const { data: profile, error: profileError } = await _supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        // Still allow the user to continue if we at least have a session
+      }
+
+      if (!profile) {
+        await loadDepartments();
+        showView('view-onboarding');
+        return;
+      }
+
+      currentProfile = profile;
+
+      if (profile.status === 'pending') {
+        showView('view-pending');
+        return;
+      }
+
+      if (profile.status === 'rejected') {
+        document.getElementById('pendingMsg').innerText = "Your access request was not approved. Contact Administrator.";
+        showView('view-pending');
+        return;
+      }
+
+      // Approved → main app
+      setupMainApp();
+
+    } catch (e) {
+      console.error("Session check error:", e);
+      // Show a visible message on mobile so you can see what went wrong
+      alert("Login error on this device: " + (e.message || e));
+      showView('view-login');
+    }
+  }
+
+  function showView(viewId) {
+    ['view-login', 'view-onboarding', 'view-pending', 'view-main'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = (id === viewId) ? 'block' : 'none';
+    });
+    const logoutBtn = document.getElementById('btnLogout');
+    if (logoutBtn) logoutBtn.style.display = (viewId === 'view-login') ? 'none' : 'inline-flex';
+  }
+
+  async function loginWithGoogle() {
+    try {
+      // Clean redirect URL (very important for mobile + GitHub Pages path)
+      const redirectTo = window.location.origin + window.location.pathname;
+
+      const { data, error } = await _supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account'   // forces account chooser (helps on mobile)
+          }
         }
-      }
-      loadDepartments();
-      loadWindows();
-      fetchDatabase();
-    }
+      });
 
+      if (error) {
+        alert("Login failed: " + error.message);
+        console.error(error);
+      }
+      // On success the browser will redirect to Google then come back
+    } catch (err) {
+      alert("Login error: " + err.message);
+      console.error(err);
+    }
+  }
+
+  async function logout() {
+    await _supabaseClient.auth.signOut();
+    window.location.href = window.location.origin + window.location.pathname;
+  }
+
+  async function submitProfile() {
+    const fullName = document.getElementById('regFullName').value.trim();
+    const designation = document.getElementById('regDesignation').value;
+    const department = document.getElementById('regDepartment').value;
+    if (!fullName) return alert("Please enter your Full Name");
+
+    const { error } = await _supabaseClient.from('profiles').upsert({
+      id: currentUser.id,
+      email: currentUser.email,
+      full_name: fullName,
+      designation: designation,
+      department: department,
+      role: 'viewer',
+      status: 'pending'
+    });
+
+    if (error) {
+      alert("Error saving profile: " + error.message);
+    } else {
+      await checkUserSession();
+    }
+  }
+
+  function setupMainApp() {
+    showView('view-main');
+    const navInfo = document.getElementById('navUserInfo');
+    if (navInfo) {
+      navInfo.style.display = 'inline';
+      navInfo.innerText = `${currentProfile.full_name || 'Staff'} (${String(currentProfile.role || 'viewer').toUpperCase()})`;
+    }
+    if (currentProfile.role === 'admin') {
+      const adminTab = document.getElementById('tabBtnAdmin');
+      if (adminTab) adminTab.style.display = 'flex';
+      loadAdminUsers();
+    }
+    if (currentProfile.role === 'viewer') {
+      const uploadCard = document.getElementById('uploadDeskCard');
+      if (uploadCard) {
+        uploadCard.innerHTML = `
+          <div style="text-align: center; padding: 40px 10px; color: var(--text-muted);">
+            <i class="fa-solid fa-lock" style="font-size: 2.5rem; margin-bottom: 12px;"></i>
+            <h3>Upload Restricted</h3>
+            <p>You have Viewer access. Contact the administrator to grant you Editor role for uploads.</p>
+          </div>
+        `;
+      }
+    }
+    loadDepartments();
+    loadWindows();
+    fetchDatabase();
+  }
+
+</script>
     async function loadAdminUsers() {
       const tbody = document.getElementById('adminUserTableBody');
       const { data: users, error } = await _supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
