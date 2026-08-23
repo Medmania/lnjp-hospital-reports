@@ -215,23 +215,9 @@
     .badge { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
     .badge-w1 { background: #dbeafe; color: #1e40af; }
     .badge-w2 { background: #fef3c7; color: #92400e; }
+    .badge-other { background: #e2e8f0; color: #475569; }
     .img-preview { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; border: 1px solid var(--surface-border); cursor: pointer; background: var(--bg); }
     
-    .lab-box {
-      background: var(--bg);
-      border: 1px solid var(--surface-border);
-      border-radius: 8px;
-      padding: 10px;
-      margin-top: 6px;
-      font-size: 12px;
-    }
-    .lab-title { font-weight: 700; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px; text-transform: uppercase; }
-    .lab-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
-    .lab-cell { background: var(--surface); padding: 4px 6px; border-radius: 6px; border: 1px solid var(--surface-border); }
-    .lab-cell span { display: block; font-size: 10px; color: var(--text-muted); font-weight: 600; }
-    .lab-cell strong { font-size: 12px; color: var(--text-main); }
-    .dlc-subtext { font-size: 10px; color: var(--text-muted); margin-top: 6px; line-height: 1.3; }
-
     .btn-submit {
       width: 100%;
       background: var(--primary);
@@ -402,9 +388,7 @@
          
           <div class="filter-chips" id="windowChips">
             <span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Window:</span>
-            <div class="chip active" onclick="setWindowFilter('ALL', this)">All</div>
-            <div class="chip" onclick="setWindowFilter('Window 1', this)">Window 1 (CBC)</div>
-            <div class="chip" onclick="setWindowFilter('Window 2', this)">Window 2 (LFT/KFT/PT-INR)</div>
+            <!-- populated dynamically -->
           </div>
           
           <div class="filter-chips" id="deptChips">
@@ -459,8 +443,7 @@
           <div class="form-group">
             <label>Target Window:</label>
             <select id="uploadWindowType">
-              <option value="Window 1">Window 1 (CBC / Hematology Sheet)</option>
-              <option value="Window 2">Window 2 (LFT / KFT / Markers)</option>
+              <!-- populated dynamically -->
             </select>
           </div>
           <div class="upload-zone" onclick="document.getElementById('fileChooser').click()">
@@ -505,6 +488,21 @@
           </div>
           <div id="deptListContainer" style="margin-top: 12px;"></div>
         </div>
+
+        <!-- NEW: Manage Windows -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-title"><i class="fa-solid fa-window-maximize"></i> Manage Windows</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Windows appear as filter chips and in the Upload dropdown for every user.
+          </p>
+          <div class="dept-manage-row">
+            <input type="text" id="newWindowName" class="search-input" style="margin-bottom:0;" placeholder="e.g. Window 3 (Markers)">
+            <button class="btn-submit" style="width: auto; padding: 10px 16px;" onclick="addWindow()">
+              <i class="fa-solid fa-plus"></i> Add
+            </button>
+          </div>
+          <div id="windowListContainer" style="margin-top: 12px;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -523,7 +521,7 @@
     </div>
   </div>
 
-  <!-- Edit / Correction Modal -->
+  <!-- Edit / Correction Modal (NO CBC fields) -->
   <div class="modal" id="editModal">
     <div class="modal-content" style="background: var(--surface); padding: 25px; border-radius: var(--radius); width: 95%; max-width: 480px; box-shadow: var(--shadow);">
       <button class="modal-close" style="top: 10px; right: 15px; color: var(--text-muted);" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
@@ -541,16 +539,7 @@
       </div>
       <div class="form-group" style="width: 100%;">
         <label>Department:</label>
-        <input type="text" id="editDept">
-      </div>
-
-      <div id="editCbcFields" style="display: none; width: 100%;">
-        <div style="font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 6px;">CBC Values:</div>
-        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-          <input type="text" id="editHb" placeholder="Hb (g/dL)" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--surface-border);">
-          <input type="text" id="editTlc" placeholder="TLC" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--surface-border);">
-          <input type="text" id="editPlt" placeholder="Platelets" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--surface-border);">
-        </div>
+        <input type="text" id="editDept" placeholder="Leave blank → will be set to Other">
       </div>
 
       <button class="btn-submit" id="btnSaveEdit" onclick="saveRecordCorrection()">
@@ -578,8 +567,10 @@
     let currentZoom = 1;
     let currentRotation = 0;
     let departmentList = [];
+    let windowList = [];
 
     const DEFAULT_DEPTS = ["Med EM", "Sx EM", "PICU", "CLR", "W14", "Ortho EM", "ICU", "Other"];
+    const DEFAULT_WINDOWS = ["Window 1", "Window 2"];
 
     window.addEventListener('DOMContentLoaded', () => {
       _supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -597,6 +588,7 @@
       return url;
     }
 
+    // ---------- DEPARTMENTS ----------
     async function loadDepartments() {
       try {
         const { data, error } = await _supabaseClient.from('departments').select('name').order('name');
@@ -608,6 +600,8 @@
       } catch (e) {
         departmentList = [...DEFAULT_DEPTS];
       }
+      // Ensure "Other" always exists
+      if (!departmentList.includes("Other")) departmentList.push("Other");
       renderDeptChips();
       renderRegDepartmentSelect();
       if (currentProfile?.role === 'admin') renderDeptAdminList();
@@ -665,6 +659,7 @@
     }
 
     async function deleteDepartment(name) {
+      if (name === "Other") return alert('"Other" cannot be deleted.');
       if (!confirm(`Delete department "${name}"?`)) return;
       try {
         const { error } = await _supabaseClient.from('departments').delete().eq('name', name);
@@ -678,6 +673,90 @@
       }
     }
 
+    // ---------- WINDOWS (NEW) ----------
+    async function loadWindows() {
+      try {
+        const { data, error } = await _supabaseClient.from('windows').select('name').order('name');
+        if (error || !data || data.length === 0) {
+          windowList = [...DEFAULT_WINDOWS];
+        } else {
+          windowList = data.map(w => w.name);
+        }
+      } catch (e) {
+        windowList = [...DEFAULT_WINDOWS];
+      }
+      renderWindowChips();
+      renderUploadWindowSelect();
+      if (currentProfile?.role === 'admin') renderWindowAdminList();
+    }
+
+    function renderWindowChips() {
+      const container = document.getElementById('windowChips');
+      if (!container) return;
+      let html = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Window:</span>
+                  <div class="chip ${activeWindowFilter === 'ALL' ? 'active' : ''}" onclick="setWindowFilter('ALL', this)">All</div>`;
+      windowList.forEach(w => {
+        html += `<div class="chip ${activeWindowFilter === w ? 'active' : ''}" onclick="setWindowFilter('${w}', this)">${w}</div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderUploadWindowSelect() {
+      const select = document.getElementById('uploadWindowType');
+      if (!select) return;
+      select.innerHTML = windowList.map(w => `<option value="${w}">${w}</option>`).join('');
+    }
+
+    function renderWindowAdminList() {
+      const container = document.getElementById('windowListContainer');
+      if (!container) return;
+      if (windowList.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted);">No windows yet.</p>';
+        return;
+      }
+      container.innerHTML = windowList.map(w => `
+        <div class="dept-list-item">
+          <span>${w}</span>
+          <button class="btn-table btn-delete-dept" onclick="deleteWindow('${w}')"><i class="fa-solid fa-trash"></i> Delete</button>
+        </div>
+      `).join('');
+    }
+
+    async function addWindow() {
+      const input = document.getElementById('newWindowName');
+      const name = (input.value || '').trim();
+      if (!name) return alert('Enter a window name');
+      if (windowList.includes(name)) return alert('Window already exists');
+      try {
+        const { error } = await _supabaseClient.from('windows').insert({ name });
+        if (error) throw error;
+        input.value = '';
+        await loadWindows();
+      } catch (e) {
+        // fallback local
+        windowList.push(name);
+        windowList.sort();
+        renderWindowChips();
+        renderUploadWindowSelect();
+        renderWindowAdminList();
+      }
+    }
+
+    async function deleteWindow(name) {
+      if (!confirm(`Delete window "${name}"? Existing reports will keep their old window label.`)) return;
+      try {
+        const { error } = await _supabaseClient.from('windows').delete().eq('name', name);
+        if (error) throw error;
+        await loadWindows();
+      } catch (e) {
+        windowList = windowList.filter(w => w !== name);
+        renderWindowChips();
+        renderUploadWindowSelect();
+        renderWindowAdminList();
+      }
+    }
+
+    // ---------- AUTH & PROFILE ----------
     async function checkUserSession() {
       try {
         const { data: { session }, error: sessionError } = await _supabaseClient.auth.getSession();
@@ -777,6 +856,7 @@
         }
       }
       loadDepartments();
+      loadWindows();
       fetchDatabase();
     }
 
@@ -834,6 +914,7 @@
       document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
     }
 
+    // ---------- DATA FETCH & FILTERS ----------
     async function fetchDatabase(manual = false) {
       const countLabel = document.getElementById('resultsCount');
       if (manual) countLabel.innerText = "Syncing from Google Sheet...";
@@ -850,6 +931,13 @@
             if (!r.timestamp) return true;
             const ts = new Date(r.timestamp);
             return isNaN(ts.getTime()) || ts >= fiveDaysAgo;
+          }).map(r => {
+            // Auto-assign "Other" if dept is missing / empty
+            const dept = (r.dept || '').toString().trim();
+            return {
+              ...r,
+              dept: dept ? dept : "Other"
+            };
           });
         } else {
           rawRecords = [];
@@ -900,7 +988,7 @@
       const filtered = rawRecords.filter(r => {
         const nameStr = String(r.name || '').toLowerCase();
         const crStr = String(r.crNo || '').toLowerCase();
-        const deptStr = String(r.dept || '').toLowerCase();
+        const deptStr = String(r.dept || 'Other').toLowerCase();
         const matchQuery = !query || nameStr.includes(query) || crStr.includes(query) || deptStr.includes(query);
 
         const matchWindow = (activeWindowFilter === 'ALL') || (String(r.windowType || '') === activeWindowFilter);
@@ -940,7 +1028,11 @@
       const isEditorOrAdmin = currentProfile && (currentProfile.role === 'admin' || currentProfile.role === 'editor');
 
       [...filtered].reverse().forEach(r => {
-        const badgeClass = r.windowType === 'Window 1' ? 'badge-w1' : 'badge-w2';
+        // Badge colour logic (simple)
+        let badgeClass = 'badge-other';
+        if (r.windowType === 'Window 1') badgeClass = 'badge-w1';
+        else if (r.windowType === 'Window 2') badgeClass = 'badge-w2';
+
         const directUrl = getDirectImageUrl(r.imgUrl);
         const uniqueId = `${r.rowIndex}_${r.crNo}`.replace(/\s+/g, '_');
         const isSelected = selectedReports.has(uniqueId);
@@ -951,34 +1043,7 @@
           dateStr = d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         } catch(e) { dateStr = r.timestamp; }
 
-        let labHtml = '';
-        if (r.windowType === 'Window 1' && r.labData) {
-          try {
-            const parsed = typeof r.labData === 'string' ? JSON.parse(r.labData) : r.labData;
-            if (parsed && (parsed.hb || parsed.tlc || parsed.platelets)) {
-              labHtml = `
-                <div class="lab-box">
-                  <div class="lab-title"><i class="fa-solid fa-droplet"></i> Extracted Hematology (CBC)</div>
-                  <div class="lab-grid">
-                    <div class="lab-cell"><span>Hb (g/dL)</span><strong>${parsed.hb || '—'}</strong></div>
-                    <div class="lab-cell"><span>TLC (/cu mm)</span><strong>${parsed.tlc || '—'}</strong></div>
-                    <div class="lab-cell"><span>PLT (k/uL)</span><strong>${parsed.platelets || '—'}</strong></div>
-                  </div>
-                  ${parsed.dlc ? `
-                    <div class="dlc-subtext">
-                      <strong>DLC:</strong> 
-                      ${parsed.dlc.neutrophils ? `N:${parsed.dlc.neutrophils}% ` : ''}
-                      ${parsed.dlc.lymphocytes ? `L:${parsed.dlc.lymphocytes}% ` : ''}
-                      ${parsed.dlc.monocytes ? `M:${parsed.dlc.monocytes}% ` : ''}
-                      ${parsed.dlc.eosinophils ? `E:${parsed.dlc.eosinophils}%` : ''}
-                    </div>
-                  ` : ''}
-                </div>
-              `;
-            }
-          } catch(e) {}
-        }
-
+        // NO CBC / labData display any more
         const card = document.createElement('div');
         card.className = 'result-card' + (isSelected ? ' selected' : '');
         card.dataset.id = uniqueId;
@@ -988,25 +1053,24 @@
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-left: 26px;">
               <strong>${r.name || 'Unknown Patient'}</strong>
-              <span class="badge ${badgeClass}">${r.windowType}</span>
+              <span class="badge ${badgeClass}">${r.windowType || '—'}</span>
             </div>
             <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px; padding-left: 26px;">
               CR: <span style="color:var(--text-main); font-weight:600;">${r.crNo || 'N/A'}</span>
             </div>
             <div style="font-size: 13px; color: var(--text-muted); padding-left: 26px;">
-              Dept: <span style="color:var(--text-main); font-weight:600;">${r.dept || 'N/A'}</span>
+              Dept: <span style="color:var(--text-main); font-weight:600;">${r.dept || 'Other'}</span>
             </div>
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px; padding-left: 26px;">
               <i class="fa-regular fa-clock"></i> ${dateStr}
             </div>
-            ${labHtml}
           </div>
           <img src="${directUrl}" class="img-preview" onclick="openModal('${directUrl}')" onerror="this.src='https://via.placeholder.com/300x140?text=Image+Not+Available'; this.style.objectFit='contain';" loading="lazy">
           <div style="display: flex; gap: 6px;">
             <button class="btn-action btn-view" onclick="openModal('${directUrl}')"><i class="fa-solid fa-expand"></i> View</button>
             ${isEditorOrAdmin ? `<button class="btn-action btn-edit" onclick="openEditModal(${r.rowIndex})"><i class="fa-solid fa-pen"></i> Edit</button>` : ''}
             ${isAdmin ? `<button class="btn-action btn-del" onclick="deleteEntry(${r.rowIndex}, '${String(r.name || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i></button>` : ''}
-            <button class="btn-action btn-wa" onclick="shareWhatsApp('${String(r.name||'').replace(/'/g,"\\'")}', '${r.crNo}', '${r.dept}', '${r.imgUrl}')"><i class="fa-brands fa-whatsapp"></i> Share</button>
+            <button class="btn-action btn-wa" onclick="shareWhatsApp('${String(r.name||'').replace(/'/g,"\\'")}', '${r.crNo}', '${r.dept || 'Other'}', '${r.imgUrl}', '${directUrl}')"><i class="fa-brands fa-whatsapp"></i> Share</button>
           </div>
         `;
         grid.appendChild(card);
@@ -1015,6 +1079,7 @@
       updateBulkBar();
     }
 
+    // ---------- EDIT (no CBC) ----------
     function openEditModal(rowIndex) {
       const record = rawRecords.find(r => r.rowIndex === rowIndex);
       if (!record) return;
@@ -1023,18 +1088,6 @@
       document.getElementById('editName').value = record.name || '';
       document.getElementById('editCrNo').value = record.crNo || '';
       document.getElementById('editDept').value = record.dept || '';
-
-      const cbcSection = document.getElementById('editCbcFields');
-      if (record.windowType === 'Window 1') {
-        cbcSection.style.display = 'block';
-        let parsed = {};
-        try { parsed = typeof record.labData === 'string' ? JSON.parse(record.labData) : (record.labData || {}); } catch(e){}
-        document.getElementById('editHb').value = parsed.hb || '';
-        document.getElementById('editTlc').value = parsed.tlc || '';
-        document.getElementById('editPlt').value = parsed.platelets || '';
-      } else {
-        cbcSection.style.display = 'none';
-      }
 
       document.getElementById('editModal').classList.add('active');
     }
@@ -1045,25 +1098,13 @@
 
     async function saveRecordCorrection() {
       const rowIndex = parseInt(document.getElementById('editRowIndex').value);
-      const name = document.getElementById('editName').value.trim();
-      const cr_no = document.getElementById('editCrNo').value.trim();
-      const dept = document.getElementById('editDept').value.trim();
+      let name = document.getElementById('editName').value.trim();
+      let cr_no = document.getElementById('editCrNo').value.trim();
+      let dept = document.getElementById('editDept').value.trim();
+      // Auto Other if empty
+      if (!dept) dept = "Other";
+
       const btn = document.getElementById('btnSaveEdit');
-
-      const record = rawRecords.find(r => r.rowIndex === rowIndex);
-      let lab_data = null;
-
-      if (record && record.windowType === 'Window 1') {
-        let existingLab = {};
-        try { existingLab = typeof record.labData === 'string' ? JSON.parse(record.labData) : (record.labData || {}); } catch(e){}
-        lab_data = {
-          ...existingLab,
-          hb: document.getElementById('editHb').value.trim() || null,
-          tlc: document.getElementById('editTlc').value.trim() || null,
-          platelets: document.getElementById('editPlt').value.trim() || null
-        };
-      }
-
       btn.disabled = true;
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
 
@@ -1076,7 +1117,7 @@
             name: name,
             cr_no: cr_no,
             dept: dept,
-            lab_data: lab_data
+            lab_data: null          // no longer sending CBC data
           })
         });
 
@@ -1131,8 +1172,9 @@
             rowIndex: row.rowIndex,
             name: row.name, 
             crNo: row.crNo, 
-            dept: row.dept, 
-            imgUrl: row.imgUrl, 
+            dept: row.dept || "Other", 
+            imgUrl: row.imgUrl,
+            directUrl: getDirectImageUrl(row.imgUrl),
             windowType: row.windowType 
           });
           if (card) card.classList.add('selected');
@@ -1161,7 +1203,6 @@
       countEl.innerText = `${count} selected`;
       bar.classList.toggle('active', count > 0);
 
-      // Show Bulk Delete only for Admin
       const isAdmin = currentProfile && currentProfile.role === 'admin';
       if (delBtn) delBtn.style.display = (isAdmin && count > 0) ? 'flex' : 'none';
 
@@ -1218,21 +1259,44 @@
       }
     }
 
+    // ---------- WHATSAPP (best-effort real photo on mobile) ----------
+    async function shareWhatsApp(name, crNo, dept, imgUrl, directUrl) {
+      const text = `*LNJP Hospital Lab Report*\n👤 *Patient:* ${name}\n🔢 *CR No:* ${crNo}\n🏥 *Dept:* ${dept || 'Other'}\n📄 *View Sheet:* ${imgUrl || directUrl}`;
+
+      // Try Web Share API with image (works well on mobile Chrome/Safari)
+      if (navigator.share && navigator.canShare) {
+        try {
+          const response = await fetch(directUrl || imgUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `lab_${crNo || 'report'}.jpg`, { type: blob.type || 'image/jpeg' });
+          
+          if (navigator.canShare({ files: [file], text })) {
+            await navigator.share({
+              files: [file],
+              title: 'LNJP Lab Report',
+              text: text
+            });
+            return;
+          }
+        } catch (e) {
+          console.log('Web Share with file failed, falling back to text', e);
+        }
+      }
+
+      // Fallback: classic WhatsApp text + link
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
     function shareSelectedWhatsApp() {
       if (selectedReports.size === 0) return;
       let message = `*LNJP Hospital – Lab Reports (${selectedReports.size})*\n\n`;
       let i = 1;
       selectedReports.forEach(r => {
-        message += `*${i}. ${r.name || 'Unknown'}*\n🔢 CR: ${r.crNo || 'N/A'}\n🏥 Dept: ${r.dept || 'N/A'}\n🪟 ${r.windowType}\n📄 ${r.imgUrl}\n\n`;
+        message += `*${i}. ${r.name || 'Unknown'}*\n🔢 CR: ${r.crNo || 'N/A'}\n🏥 Dept: ${r.dept || 'Other'}\n🪟 ${r.windowType || '—'}\n📄 ${r.imgUrl || r.directUrl}\n\n`;
         i++;
       });
       message += `_Shared from LNJP LabHub_`;
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
-    }
-
-    function shareWhatsApp(name, crNo, dept, imgUrl) {
-      const text = encodeURIComponent(`*LNJP Hospital Lab Report*\n👤 *Patient:* ${name}\n🔢 *CR No:* ${crNo}\n🏥 *Dept:* ${dept}\n📄 *View Sheet:* ${imgUrl}`);
-      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
     }
 
     // ========== LIGHTBOX MODAL ==========
