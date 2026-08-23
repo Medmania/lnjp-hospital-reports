@@ -5,340 +5,103 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LNJP Hospital • Lab Hub</title>
  
-  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
-    :root {
-      --primary: #0284c7;
-      --primary-hover: #0369a1;
-      --primary-light: #e0f2fe;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --surface-border: #e2e8f0;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --radius: 12px;
-      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-    }
-    [data-theme="dark"] {
-      --primary: #38bdf8;
-      --primary-hover: #0ea5e9;
-      --primary-light: #1e293b;
-      --bg: #0b0f19;
-      --surface: #111827;
-      --surface-border: #1f2937;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --shadow: 0 4px 10px rgb(0 0 0 / 0.3);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; transition: background-color 0.2s ease; }
-    body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; }
-    
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--surface-border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      box-shadow: var(--shadow);
-    }
-    .nav-container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 1.15rem;
-      color: var(--primary);
-    }
-    .user-actions { display: flex; align-items: center; gap: 10px; }
-    .theme-toggle, .btn-logout {
-      background: var(--bg);
-      border: 1px solid var(--surface-border);
-      color: var(--text-main);
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .container { max-width: 1000px; margin: 20px auto; padding: 0 16px; }
-    
-    .auth-card {
-      max-width: 450px;
-      margin: 60px auto;
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius);
-      padding: 30px;
-      text-align: center;
-      box-shadow: var(--shadow);
-    }
-    .auth-title { font-size: 1.3rem; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
-    .auth-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.4; }
-    .btn-google {
-      width: 100%;
-      background: #ffffff;
-      color: #333333;
-      border: 1px solid #d1d5db;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .form-group { text-align: left; margin-bottom: 15px; }
-    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--surface-border);
-      background: var(--bg);
-      color: var(--text-main);
-      font-size: 14px;
-      outline: none;
-    }
-
-    .tab-bar {
-      display: flex;
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      padding: 4px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      gap: 4px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 10px 14px;
-      border: none;
-      background: none;
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--text-muted);
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .tab-btn.active { background: var(--primary); color: #ffffff; }
-
-    .panel { display: none; }
-    .panel.active { display: block; }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow);
-    }
-    .card-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--primary);
-    }
-    .search-input {
-      width: 100%;
-      padding: 14px 14px 14px 44px;
-      border-radius: 10px;
-      border: 1px solid var(--surface-border);
-      background: var(--bg);
-      color: var(--text-main);
-      font-size: 15px;
-      outline: none;
-      margin-bottom: 12px;
-    }
-    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-    .chip {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      background: var(--bg);
-      border: 1px solid var(--surface-border);
-      color: var(--text-muted);
-      cursor: pointer;
-      user-select: none;
-    }
-    .chip.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
-
-    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; margin-top: 15px; }
-    .result-card {
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius);
-      padding: 14px;
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 10px;
-      position: relative;
-    }
-    .result-card.selected { border: 2px solid var(--primary); background: var(--primary-light); }
-    .card-checkbox { position: absolute; top: 12px; left: 12px; width: 18px; height: 18px; cursor: pointer; z-index: 5; }
-
-    .badge { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
-    .badge-w1 { background: #dbeafe; color: #1e40af; }
-    .badge-w2 { background: #fef3c7; color: #92400e; }
-    .badge-other { background: #e2e8f0; color: #475569; }
-    .img-preview { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; border: 1px solid var(--surface-border); cursor: pointer; background: var(--bg); }
-    
-    .btn-submit {
-      width: 100%;
-      background: var(--primary);
-      color: white;
-      padding: 14px;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .btn-action { flex: 1; padding: 8px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
-    .btn-view { background: var(--primary-light); color: var(--primary); }
-    .btn-edit { background: #fef3c7; color: #b45309; }
-    .btn-del { background: #fee2e2; color: #dc2626; }
-    .btn-wa { background: #dcfce7; color: #15803d; }
-
-    /* Enhanced Bulk Action Bar */
-    .bulk-bar {
-      position: sticky;
-      bottom: 20px;
-      left: 0;
-      right: 0;
-      background: var(--surface);
-      border: 1px solid var(--primary);
-      color: var(--text-main);
-      padding: 12px 20px;
-      border-radius: 12px;
-      display: none;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-      z-index: 40;
-      margin-top: 20px;
-    }
-    .bulk-bar.active { display: flex; }
-    .bulk-actions-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .btn-bulk {
-      border: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-bulk-clear { background: var(--bg); color: var(--text-muted); border: 1px solid var(--surface-border); }
-    .btn-bulk-share { background: #dcfce7; color: #15803d; }
-    .btn-bulk-delete { background: #fee2e2; color: #dc2626; }
-
-    .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-    .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--surface-border); }
-    .admin-table th { background: var(--bg); color: var(--text-muted); font-weight: 600; }
-    .btn-table { padding: 6px 10px; border-radius: 6px; border: none; font-size: 11px; font-weight: 700; cursor: pointer; margin-right: 4px; }
-    .btn-approve-viewer { background: #e0f2fe; color: #0284c7; }
-    .btn-approve-editor { background: #dcfce7; color: #16a34a; }
-    .btn-reject { background: #fee2e2; color: #dc2626; }
-    .btn-delete-dept { background: #fee2e2; color: #dc2626; }
-
-    .upload-zone { border: 2px dashed var(--primary); background: var(--bg); border-radius: var(--radius); padding: 30px 20px; text-align: center; cursor: pointer; margin-bottom: 15px; }
-    .preview-tray { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
-    .thumb-box { position: relative; width: 75px; height: 75px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-    .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-    .thumb-remove { position: absolute; top: 2px; right: 2px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; }
-
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; padding: 15px; }
-    .modal.active { display: flex; }
-    .modal-content { max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column; align-items: center; position: relative; }
-    .modal-img { max-width: 100%; max-height: 75vh; border-radius: 8px; }
-    .modal-toolbar { display: flex; gap: 10px; margin-top: 12px; background: rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 30px; }
-    .tool-btn { background: none; border: none; color: white; font-size: 16px; cursor: pointer; }
-    .modal-close { position: absolute; top: -35px; right: 0; color: white; font-size: 24px; background: none; border: none; cursor: pointer; }
-    
-    .dept-manage-row { display: flex; gap: 8px; margin-bottom: 12px; }
-    .dept-manage-row input { flex: 1; }
-    .dept-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg); border-radius: 8px; margin-bottom: 6px; }
+    :root{--primary:#0284c7;--primary-hover:#0369a1;--primary-light:#e0f2fe;--bg:#f8fafc;--surface:#ffffff;--surface-border:#e2e8f0;--text-main:#0f172a;--text-muted:#64748b;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:12px;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.07),0 2px 4px -2px rgb(0 0 0 / 0.05)}
+    [data-theme="dark"]{--primary:#38bdf8;--primary-hover:#0ea5e9;--primary-light:#1e293b;--bg:#0b0f19;--surface:#111827;--surface-border:#1f2937;--text-main:#f8fafc;--text-muted:#94a3b8;--shadow:0 4px 10px rgb(0 0 0 / 0.3)}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;transition:background-color .2s ease}
+    body{background-color:var(--bg);color:var(--text-main);min-height:100vh}
+    header{background:var(--surface);border-bottom:1px solid var(--surface-border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+    .nav-container{max-width:1000px;margin:0 auto;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem;color:var(--primary)}
+    .user-actions{display:flex;align-items:center;gap:10px}
+    .theme-toggle,.btn-logout{background:var(--bg);border:1px solid var(--surface-border);color:var(--text-main);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+    .container{max-width:1000px;margin:20px auto;padding:0 16px}
+    .auth-card{max-width:450px;margin:60px auto;background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:30px;text-align:center;box-shadow:var(--shadow)}
+    .auth-title{font-size:1.3rem;font-weight:700;color:var(--primary);margin-bottom:8px}
+    .auth-desc{font-size:14px;color:var(--text-muted);margin-bottom:25px;line-height:1.4}
+    .btn-google{width:100%;background:#fff;color:#333;border:1px solid #d1d5db;padding:12px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 4px rgba(0,0,0,.05)}
+    .form-group{text-align:left;margin-bottom:15px}
+    .form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-main)}
+    .form-group input,.form-group select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--surface-border);background:var(--bg);color:var(--text-main);font-size:14px;outline:none}
+    .tab-bar{display:flex;background:var(--surface);border:1px solid var(--surface-border);padding:4px;border-radius:10px;margin-bottom:20px;gap:4px}
+    .tab-btn{flex:1;padding:10px 14px;border:none;background:none;font-weight:600;font-size:14px;color:var(--text-muted);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+    .tab-btn.active{background:var(--primary);color:#fff}
+    .panel{display:none}.panel.active{display:block}
+    .card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--shadow)}
+    .card-title{font-size:1.1rem;font-weight:600;margin-bottom:15px;display:flex;align-items:center;gap:8px;color:var(--primary)}
+    .search-input{width:100%;padding:14px 14px 14px 44px;border-radius:10px;border:1px solid var(--surface-border);background:var(--bg);color:var(--text-main);font-size:15px;outline:none;margin-bottom:12px}
+    .filter-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    .chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--surface-border);color:var(--text-muted);cursor:pointer;user-select:none}
+    .chip.active{background:var(--primary-light);color:var(--primary);border-color:var(--primary)}
+    .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-top:15px}
+    .result-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;gap:10px;position:relative}
+    .result-card.selected{border:2px solid var(--primary);background:var(--primary-light)}
+    .card-checkbox{position:absolute;top:12px;left:12px;width:18px;height:18px;cursor:pointer;z-index:5}
+    .badge{font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px}
+    .badge-w1{background:#dbeafe;color:#1e40af}.badge-w2{background:#fef3c7;color:#92400e}.badge-other{background:#e2e8f0;color:#475569}
+    .img-preview{width:100%;height:140px;object-fit:cover;border-radius:8px;border:1px solid var(--surface-border);cursor:pointer;background:var(--bg)}
+    .btn-submit{width:100%;background:var(--primary);color:#fff;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+    .btn-action{flex:1;padding:8px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+    .btn-view{background:var(--primary-light);color:var(--primary)}.btn-edit{background:#fef3c7;color:#b45309}.btn-del{background:#fee2e2;color:#dc2626}.btn-wa{background:#dcfce7;color:#15803d}
+    .bulk-bar{position:sticky;bottom:20px;left:0;right:0;background:var(--surface);border:1px solid var(--primary);color:var(--text-main);padding:12px 20px;border-radius:12px;display:none;justify-content:space-between;align-items:center;box-shadow:0 8px 25px rgba(0,0,0,.2);z-index:40;margin-top:20px}
+    .bulk-bar.active{display:flex}
+    .bulk-actions-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn-bulk{border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+    .btn-bulk-clear{background:var(--bg);color:var(--text-muted);border:1px solid var(--surface-border)}.btn-bulk-share{background:#dcfce7;color:#15803d}.btn-bulk-delete{background:#fee2e2;color:#dc2626}
+    .admin-table{width:100%;border-collapse:collapse;margin-top:15px;font-size:13px}
+    .admin-table th,.admin-table td{padding:12px;text-align:left;border-bottom:1px solid var(--surface-border)}
+    .admin-table th{background:var(--bg);color:var(--text-muted);font-weight:600}
+    .btn-table{padding:6px 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px}
+    .btn-approve-viewer{background:#e0f2fe;color:#0284c7}.btn-approve-editor{background:#dcfce7;color:#16a34a}.btn-reject{background:#fee2e2;color:#dc2626}.btn-delete-dept{background:#fee2e2;color:#dc2626}
+    .upload-zone{border:2px dashed var(--primary);background:var(--bg);border-radius:var(--radius);padding:30px 20px;text-align:center;cursor:pointer;margin-bottom:15px}
+    .preview-tray{display:flex;gap:10px;overflow-x:auto;padding:10px 0}
+    .thumb-box{position:relative;width:75px;height:75px;border-radius:8px;overflow:hidden;flex-shrink:0}
+    .thumb-box img{width:100%;height:100%;object-fit:cover}
+    .thumb-remove{position:absolute;top:2px;right:2px;background:rgba(239,68,68,.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:15px}
+    .modal.active{display:flex}
+    .modal-content{max-width:90vw;max-height:85vh;display:flex;flex-direction:column;align-items:center;position:relative}
+    .modal-img{max-width:100%;max-height:75vh;border-radius:8px}
+    .modal-toolbar{display:flex;gap:10px;margin-top:12px;background:rgba(255,255,255,.2);padding:8px 16px;border-radius:30px}
+    .tool-btn{background:none;border:none;color:#fff;font-size:16px;cursor:pointer}
+    .modal-close{position:absolute;top:-35px;right:0;color:#fff;font-size:24px;background:none;border:none;cursor:pointer}
+    .dept-manage-row{display:flex;gap:8px;margin-bottom:12px}.dept-manage-row input{flex:1}
+    .dept-list-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px}
   </style>
 </head>
 <body>
   <header>
     <div class="nav-container">
-      <div class="brand">
-        <i class="fa-solid fa-hospital-user"></i>
-        <span>LNJP LabHub</span>
-      </div>
+      <div class="brand"><i class="fa-solid fa-hospital-user"></i><span>LNJP LabHub</span></div>
       <div class="user-actions">
-        <span id="navUserInfo" style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: none;"></span>
+        <span id="navUserInfo" style="font-size:13px;font-weight:600;color:var(--text-muted);display:none;"></span>
         <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
-        <button class="btn-logout" id="btnLogout" style="display: none;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        <button class="btn-logout" id="btnLogout" style="display:none;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
     </div>
   </header>
 
   <div class="container">
-    <!-- SCREEN 1: LOGIN -->
     <div id="view-login" class="auth-card">
-      <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+      <i class="fa-solid fa-shield-halved" style="font-size:3rem;color:var(--primary);margin-bottom:15px;"></i>
       <h2 class="auth-title">Staff Portal Login</h2>
       <p class="auth-desc">Sign in with your verified Google account to access clinical laboratory records.</p>
       <button class="btn-google" onclick="loginWithGoogle()">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="Google">
-        Continue with Google
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="Google"> Continue with Google
       </button>
     </div>
     
-    <!-- SCREEN 2: ONBOARDING -->
-    <div id="view-onboarding" class="auth-card" style="display: none;">
+    <div id="view-onboarding" class="auth-card" style="display:none;">
       <h2 class="auth-title">Complete Your Profile</h2>
       <p class="auth-desc">Please provide your hospital posting details for account verification.</p>
-      <div class="form-group">
-        <label>Full Name:</label>
-        <input type="text" id="regFullName" placeholder="Dr. Name">
-      </div>
-      <div class="form-group">
-        <label>Designation:</label>
+      <div class="form-group"><label>Full Name:</label><input type="text" id="regFullName" placeholder="Dr. Name"></div>
+      <div class="form-group"><label>Designation:</label>
         <select id="regDesignation">
           <option value="Intern">Intern / Duty Doctor</option>
           <option value="Junior Resident">Junior Resident (JR)</option>
@@ -348,1116 +111,309 @@
           <option value="Lab Technician">Lab Technician</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Primary Department / Unit:</label>
-        <select id="regDepartment"></select>
-      </div>
-      <button class="btn-submit" onclick="submitProfile()">
-        <i class="fa-solid fa-paper-plane"></i> Submit for Approval
-      </button>
+      <div class="form-group"><label>Primary Department / Unit:</label><select id="regDepartment"></select></div>
+      <button class="btn-submit" onclick="submitProfile()"><i class="fa-solid fa-paper-plane"></i> Submit for Approval</button>
     </div>
 
-    <!-- SCREEN 3: PENDING -->
-    <div id="view-pending" class="auth-card" style="display: none;">
-      <i class="fa-solid fa-clock-rotate-left" style="font-size: 3rem; color: var(--warning); margin-bottom: 15px;"></i>
+    <div id="view-pending" class="auth-card" style="display:none;">
+      <i class="fa-solid fa-clock-rotate-left" style="font-size:3rem;color:var(--warning);margin-bottom:15px;"></i>
       <h2 class="auth-title">Approval Pending</h2>
       <p class="auth-desc" id="pendingMsg">Your profile has been submitted. The Administrator will review and activate your access.</p>
-      <button class="btn-submit" style="background: var(--bg); color: var(--text-main); border: 1px solid var(--surface-border);" onclick="checkUserSession()">
-        <i class="fa-solid fa-rotate"></i> Check Status
-      </button>
+      <button class="btn-submit" style="background:var(--bg);color:var(--text-main);border:1px solid var(--surface-border);" onclick="checkUserSession()"><i class="fa-solid fa-rotate"></i> Check Status</button>
     </div>
 
-    <!-- SCREEN 4: MAIN APP -->
-    <div id="view-main" style="display: none;">
+    <div id="view-main" style="display:none;">
       <div class="tab-bar">
-        <button class="tab-btn active" id="tabBtnSearch" onclick="switchTab('search')">
-          <i class="fa-solid fa-magnifying-glass"></i> Search Directory
-        </button>
-        <button class="tab-btn" id="tabBtnUpload" onclick="switchTab('upload')">
-          <i class="fa-solid fa-camera"></i> Intern Upload Desk
-        </button>
-        <button class="tab-btn" id="tabBtnAdmin" style="display: none;" onclick="switchTab('admin')">
-          <i class="fa-solid fa-user-shield"></i> 🛡️ Admin Panel
-        </button>
+        <button class="tab-btn active" id="tabBtnSearch" onclick="switchTab('search')"><i class="fa-solid fa-magnifying-glass"></i> Search Directory</button>
+        <button class="tab-btn" id="tabBtnUpload" onclick="switchTab('upload')"><i class="fa-solid fa-camera"></i> Intern Upload Desk</button>
+        <button class="tab-btn" id="tabBtnAdmin" style="display:none;" onclick="switchTab('admin')"><i class="fa-solid fa-user-shield"></i> 🛡️ Admin Panel</button>
       </div>
 
-      <!-- TAB 1: Search -->
       <div id="tab-search" class="panel active">
         <div class="card">
           <input type="text" id="liveSearchInput" class="search-input" placeholder="Type Patient Name, CR No., or Dept to filter instantly..." oninput="applyFilters()">
-         
-          <div class="filter-chips" id="windowChips">
-            <span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Window:</span>
-            <!-- populated dynamically -->
+          <div class="filter-chips" id="windowChips"><span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Window:</span></div>
+          <div class="filter-chips" id="deptChips"><span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Dept:</span></div>
+          <div class="filter-chips" style="margin-top:12px;align-items:center;">
+            <span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Date:</span>
+            <div class="chip active" id="dateChipAll" onclick="setDateFilter('ALL',this)">All dates</div>
+            <input type="date" id="datePicker" style="padding:6px 10px;border-radius:8px;border:1px solid var(--surface-border);background:var(--bg);color:var(--text-main);font-size:13px;font-weight:600;" onchange="setDateFilter(this.value,null)">
+            <button class="chip" onclick="clearDateFilter()" style="margin-left:4px;">Clear</button>
           </div>
-          
-          <div class="filter-chips" id="deptChips">
-            <span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Dept:</span>
-          </div>
-
-          <!-- Date Filter -->
-          <div class="filter-chips" style="margin-top: 12px; align-items: center;">
-            <span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Date:</span>
-            <div class="chip active" id="dateChipAll" onclick="setDateFilter('ALL', this)">All dates</div>
-            <input type="date" id="datePicker" 
-                   style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--surface-border); 
-                          background: var(--bg); color: var(--text-main); font-size: 13px; font-weight: 600;"
-                   onchange="setDateFilter(this.value, null)" />
-            <button class="chip" onclick="clearDateFilter()" style="margin-left: 4px;">Clear</button>
-          </div>
-
-          <!-- Header Info & Select All Control -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
-                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width: 16px; height: 16px;">
-                Select All
-              </label>
-              <span id="resultsCount" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Loading records...</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width:16px;height:16px;"> Select All</label>
+              <span id="resultsCount" style="font-size:13px;font-weight:600;color:var(--text-muted);">Loading records...</span>
             </div>
             <button class="theme-toggle" onclick="fetchDatabase(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
           </div>
-
           <div class="results-grid" id="resultsGrid"></div>
-
-          <!-- Sticky Bulk Action Bar -->
           <div class="bulk-bar" id="bulkBar">
-            <strong id="selectedCount" style="font-size: 14px; color: var(--primary);">0 selected</strong>
+            <strong id="selectedCount" style="font-size:14px;color:var(--primary);">0 selected</strong>
             <div class="bulk-actions-group">
               <button class="btn-bulk btn-bulk-clear" onclick="clearSelection()">Clear</button>
-              <button class="btn-bulk btn-bulk-share" onclick="shareSelectedWhatsApp()">
-                <i class="fa-brands fa-whatsapp"></i> Share
-              </button>
-              <button class="btn-bulk btn-bulk-delete" id="btnBulkDelete" style="display: none;" onclick="deleteSelectedRecords()">
-                <i class="fa-solid fa-trash"></i> Delete Selected
-              </button>
+              <button class="btn-bulk btn-bulk-share" onclick="shareSelectedWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Share</button>
+              <button class="btn-bulk btn-bulk-delete" id="btnBulkDelete" style="display:none;" onclick="deleteSelectedRecords()"><i class="fa-solid fa-trash"></i> Delete Selected</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- TAB 2: Upload -->
       <div id="tab-upload" class="panel">
         <div class="card" id="uploadDeskCard">
           <div class="card-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Lab Sheets</div>
-          <div class="form-group">
-            <label>Target Window:</label>
-            <select id="uploadWindowType">
-              <!-- populated dynamically -->
-            </select>
-          </div>
+          <div class="form-group"><label>Target Window:</label><select id="uploadWindowType"></select></div>
           <div class="upload-zone" onclick="document.getElementById('fileChooser').click()">
-            <i class="fa-solid fa-camera-retro" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 10px;"></i>
-            <p style="font-weight: 600;">Take Photos or Select Gallery (Up to 30)</p>
-            <input type="file" id="fileChooser" accept="image/*" multiple style="display: none;" onchange="handleFileSelection(event)">
+            <i class="fa-solid fa-camera-retro" style="font-size:2.5rem;color:var(--primary);margin-bottom:10px;"></i>
+            <p style="font-weight:600;">Take Photos or Select Gallery (Up to 30)</p>
+            <input type="file" id="fileChooser" accept="image/*" multiple style="display:none;" onchange="handleFileSelection(event)">
           </div>
           <div class="preview-tray" id="previewTray"></div>
-          <button class="btn-submit" id="btnUpload" onclick="startBatchUpload()">
-            <i class="fa-solid fa-microchip-ai"></i> Upload & Process with AI
-          </button>
-          <p id="uploadStatusText" style="text-align: center; font-size: 13px; font-weight: 600; margin-top: 10px;"></p>
+          <button class="btn-submit" id="btnUpload" onclick="startBatchUpload()"><i class="fa-solid fa-microchip-ai"></i> Upload & Process with AI</button>
+          <p id="uploadStatusText" style="text-align:center;font-size:13px;font-weight:600;margin-top:10px;"></p>
         </div>
       </div>
 
-      <!-- TAB 3: Admin -->
       <div id="tab-admin" class="panel">
         <div class="card">
           <div class="card-title"><i class="fa-solid fa-users-gear"></i> User Approvals & Role Management</div>
           <table class="admin-table">
-            <thead>
-              <tr>
-                <th>User Details</th>
-                <th>Posting / Dept</th>
-                <th>Status / Role</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="adminUserTableBody">
-              <tr><td colspan="4">Loading registered staff...</td></tr>
-            </tbody>
+            <thead><tr><th>User Details</th><th>Posting / Dept</th><th>Status / Role</th><th>Actions</th></tr></thead>
+            <tbody id="adminUserTableBody"><tr><td colspan="4">Loading registered staff...</td></tr></tbody>
           </table>
         </div>
-
-        <div class="card" style="margin-top: 20px;">
+        <div class="card" style="margin-top:20px;">
           <div class="card-title"><i class="fa-solid fa-building"></i> Manage Departments</div>
           <div class="dept-manage-row">
             <input type="text" id="newDeptName" class="search-input" style="margin-bottom:0;" placeholder="Enter new department name (e.g. Ortho EM)">
-            <button class="btn-submit" style="width: auto; padding: 10px 16px;" onclick="addDepartment()">
-              <i class="fa-solid fa-plus"></i> Add
-            </button>
+            <button class="btn-submit" style="width:auto;padding:10px 16px;" onclick="addDepartment()"><i class="fa-solid fa-plus"></i> Add</button>
           </div>
-          <div id="deptListContainer" style="margin-top: 12px;"></div>
+          <div id="deptListContainer" style="margin-top:12px;"></div>
         </div>
-
-        <!-- NEW: Manage Windows -->
-        <div class="card" style="margin-top: 20px;">
+        <div class="card" style="margin-top:20px;">
           <div class="card-title"><i class="fa-solid fa-window-maximize"></i> Manage Windows</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
-            Windows appear as filter chips and in the Upload dropdown for every user.
-          </p>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Windows appear as filter chips and in the Upload dropdown for every user.</p>
           <div class="dept-manage-row">
             <input type="text" id="newWindowName" class="search-input" style="margin-bottom:0;" placeholder="e.g. Window 3 (Markers)">
-            <button class="btn-submit" style="width: auto; padding: 10px 16px;" onclick="addWindow()">
-              <i class="fa-solid fa-plus"></i> Add
-            </button>
+            <button class="btn-submit" style="width:auto;padding:10px 16px;" onclick="addWindow()"><i class="fa-solid fa-plus"></i> Add</button>
           </div>
-          <div id="windowListContainer" style="margin-top: 12px;"></div>
+          <div id="windowListContainer" style="margin-top:12px;"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Image Lightbox Modal -->
   <div class="modal" id="imageModal">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
       <img src="" id="modalImage" class="modal-img">
       <div class="modal-toolbar">
-        <button class="tool-btn" onclick="zoomImage(0.2)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-        <button class="tool-btn" onclick="zoomImage(-0.2)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+        <button class="tool-btn" onclick="zoomImage(.2)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+        <button class="tool-btn" onclick="zoomImage(-.2)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
         <button class="tool-btn" onclick="rotateImage()"><i class="fa-solid fa-rotate-right"></i></button>
         <a id="modalDownloadLink" class="tool-btn" target="_blank"><i class="fa-solid fa-up-right-from-square"></i></a>
       </div>
     </div>
   </div>
 
-  <!-- Edit / Correction Modal (NO CBC fields) -->
   <div class="modal" id="editModal">
-    <div class="modal-content" style="background: var(--surface); padding: 25px; border-radius: var(--radius); width: 95%; max-width: 480px; box-shadow: var(--shadow);">
-      <button class="modal-close" style="top: 10px; right: 15px; color: var(--text-muted);" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
-      <h3 style="color: var(--primary); margin-bottom: 15px; align-self: flex-start;">✏️ Correct Patient Record</h3>
-      
+    <div class="modal-content" style="background:var(--surface);padding:25px;border-radius:var(--radius);width:95%;max-width:480px;box-shadow:var(--shadow);">
+      <button class="modal-close" style="top:10px;right:15px;color:var(--text-muted);" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+      <h3 style="color:var(--primary);margin-bottom:15px;align-self:flex-start;">✏️ Correct Patient Record</h3>
       <input type="hidden" id="editRowIndex">
-      
-      <div class="form-group" style="width: 100%;">
-        <label>Patient Name:</label>
-        <input type="text" id="editName">
-      </div>
-      <div class="form-group" style="width: 100%;">
-        <label>CR Number:</label>
-        <input type="text" id="editCrNo">
-      </div>
-      <div class="form-group" style="width: 100%;">
-        <label>Department:</label>
-        <input type="text" id="editDept" placeholder="Leave blank → will be set to Other">
-      </div>
-
-      <button class="btn-submit" id="btnSaveEdit" onclick="saveRecordCorrection()">
-        <i class="fa-solid fa-check"></i> Save Correction
-      </button>
+      <div class="form-group" style="width:100%;"><label>Patient Name:</label><input type="text" id="editName"></div>
+      <div class="form-group" style="width:100%;"><label>CR Number:</label><input type="text" id="editCrNo"></div>
+      <div class="form-group" style="width:100%;"><label>Department:</label><input type="text" id="editDept" placeholder="Leave blank → will be set to Other"></div>
+      <button class="btn-submit" id="btnSaveEdit" onclick="saveRecordCorrection()"><i class="fa-solid fa-check"></i> Save Correction</button>
     </div>
   </div>
 
- <script>
-  const SUPABASE_URL = "https://leytpfrbrvrsihowgcwg.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxleXRwZnJicnZyc2lob3dnY3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDgyMzAsImV4cCI6MjEwMjI4NDIzMH0.rkR4Ndf7eyhwOKcWdPcfVV4dsaIaNpLvIUpFf63_W9E";
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9qjLCPhAXlJwDMas5ydr7_WfryVV78EUxr3mo3pb2-DW6sxRoH95FQUlWqfFyhdS6ng/exec";
+<script>
+const SUPABASE_URL="https://leytpfrbrvrsihowgcwg.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxleXRwZnJicnZyc2lob3dnY3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDgyMzAsImV4cCI6MjEwMjI4NDIzMH0.rkR4Ndf7eyhwOKcWdPcfVV4dsaIaNpLvIUpFf63_W9E";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbw9qjLCPhAXlJwDMas5ydr7_WfryVV78EUxr3mo3pb2-DW6sxRoH95FQUlWqfFyhdS6ng/exec";
 
-  // ===== IMPORTANT: mobile-friendly client options =====
-  const _supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      detectSessionInUrl: true,      // critical for mobile OAuth
-      flowType: 'pkce',              // recommended for mobile / SPA
-      persistSession: true,
-      autoRefreshToken: true,
-      storage: window.localStorage
-    }
+const _supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{detectSessionInUrl:true,flowType:'pkce',persistSession:true,autoRefreshToken:true,storage:window.localStorage}});
+
+let selectedReports=new Map(),currentlyFilteredRecords=[],currentUser=null,currentProfile=null,rawRecords=[],selectedFiles=[],activeWindowFilter="ALL",activeDeptFilter="ALL",activeDateFilter="ALL",currentZoom=1,currentRotation=0,departmentList=[],windowList=[];
+const DEFAULT_DEPTS=["Med EM","Sx EM","PICU","CLR","W14","Ortho EM","ICU","Other"];
+const DEFAULT_WINDOWS=["Window 1","Window 2"];
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  _supabaseClient.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION')await checkUserSession();
+    if(event==='SIGNED_OUT')showView('view-login');
   });
+  await checkUserSession();
+});
 
-  let selectedReports = new Map();
-  let currentlyFilteredRecords = [];
-  let currentUser = null;
-  let currentProfile = null;
-  let rawRecords = [];
-  let selectedFiles = [];
-  let activeWindowFilter = "ALL";
-  let activeDeptFilter = "ALL";
-  let activeDateFilter = "ALL";
-  let currentZoom = 1;
-  let currentRotation = 0;
-  let departmentList = [];
-  let windowList = [];
+function getDirectImageUrl(url){if(!url)return'';const match=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/)||String(url).match(/id=([a-zA-Z0-9_-]+)/);return(match&&match[1])?`https://lh3.googleusercontent.com/d/${match[1]}`:url;}
 
-  const DEFAULT_DEPTS = ["Med EM", "Sx EM", "PICU", "CLR", "W14", "Ortho EM", "ICU", "Other"];
-  const DEFAULT_WINDOWS = ["Window 1", "Window 2"];
+async function loadDepartments(){
+  try{const{data,error}=await _supabaseClient.from('departments').select('name').order('name');departmentList=(error||!data||!data.length)?[...DEFAULT_DEPTS]:data.map(d=>d.name);}catch(e){departmentList=[...DEFAULT_DEPTS];}
+  if(!departmentList.includes("Other"))departmentList.push("Other");
+  renderDeptChips();renderRegDepartmentSelect();if(currentProfile?.role==='admin')renderDeptAdminList();
+}
+function renderDeptChips(){const c=document.getElementById('deptChips');if(!c)return;let h=`<span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Dept:</span><div class="chip ${activeDeptFilter==='ALL'?'active':''}" onclick="setDeptFilter('ALL',this)">All</div>`;departmentList.forEach(d=>h+=`<div class="chip ${activeDeptFilter===d?'active':''}" onclick="setDeptFilter('${d}',this)">${d}</div>`);c.innerHTML=h;}
+function renderRegDepartmentSelect(){const s=document.getElementById('regDepartment');if(s)s.innerHTML=departmentList.map(d=>`<option value="${d}">${d}</option>`).join('');}
+function renderDeptAdminList(){const c=document.getElementById('deptListContainer');if(!c)return;c.innerHTML=departmentList.length?departmentList.map(d=>`<div class="dept-list-item"><span>${d}</span><button class="btn-table btn-delete-dept" onclick="deleteDepartment('${d}')"><i class="fa-solid fa-trash"></i> Delete</button></div>`).join(''):'<p style="color:var(--text-muted);">No departments yet.</p>';}
+async function addDepartment(){const input=document.getElementById('newDeptName'),name=(input.value||'').trim();if(!name)return alert('Enter a department name');if(departmentList.includes(name))return alert('Department already exists');try{const{error}=await _supabaseClient.from('departments').insert({name});if(error)throw error;input.value='';await loadDepartments();}catch(e){departmentList.push(name);departmentList.sort();renderDeptChips();renderRegDepartmentSelect();renderDeptAdminList();}}
+async function deleteDepartment(name){if(name==="Other")return alert('"Other" cannot be deleted.');if(!confirm(`Delete department "${name}"?`))return;try{const{error}=await _supabaseClient.from('departments').delete().eq('name',name);if(error)throw error;await loadDepartments();}catch(e){departmentList=departmentList.filter(d=>d!==name);renderDeptChips();renderRegDepartmentSelect();renderDeptAdminList();}}
 
-  // ---------- AUTH INITIALIZATION ----------
-  window.addEventListener('DOMContentLoaded', async () => {
-    // Listen for auth changes (including the OAuth callback)
-    _supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        await checkUserSession();
-      }
-      if (event === 'SIGNED_OUT') {
-        showView('view-login');
-      }
-    });
+async function loadWindows(){
+  try{const{data,error}=await _supabaseClient.from('windows').select('name').order('name');windowList=(error||!data||!data.length)?[...DEFAULT_WINDOWS]:data.map(w=>w.name);}catch(e){windowList=[...DEFAULT_WINDOWS];}
+  renderWindowChips();renderUploadWindowSelect();if(currentProfile?.role==='admin')renderWindowAdminList();
+}
+function renderWindowChips(){const c=document.getElementById('windowChips');if(!c)return;let h=`<span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Window:</span><div class="chip ${activeWindowFilter==='ALL'?'active':''}" onclick="setWindowFilter('ALL',this)">All</div>`;windowList.forEach(w=>h+=`<div class="chip ${activeWindowFilter===w?'active':''}" onclick="setWindowFilter('${w}',this)">${w}</div>`);c.innerHTML=h;}
+function renderUploadWindowSelect(){const s=document.getElementById('uploadWindowType');if(s)s.innerHTML=windowList.map(w=>`<option value="${w}">${w}</option>`).join('');}
+function renderWindowAdminList(){const c=document.getElementById('windowListContainer');if(!c)return;c.innerHTML=windowList.length?windowList.map(w=>`<div class="dept-list-item"><span>${w}</span><button class="btn-table btn-delete-dept" onclick="deleteWindow('${w}')"><i class="fa-solid fa-trash"></i> Delete</button></div>`).join(''):'<p style="color:var(--text-muted);">No windows yet.</p>';}
+async function addWindow(){const input=document.getElementById('newWindowName'),name=(input.value||'').trim();if(!name)return alert('Enter a window name');if(windowList.includes(name))return alert('Window already exists');try{const{error}=await _supabaseClient.from('windows').insert({name});if(error)throw error;input.value='';await loadWindows();}catch(e){windowList.push(name);windowList.sort();renderWindowChips();renderUploadWindowSelect();renderWindowAdminList();}}
+async function deleteWindow(name){if(!confirm(`Delete window "${name}"? Existing reports will keep their old window label.`))return;try{const{error}=await _supabaseClient.from('windows').delete().eq('name',name);if(error)throw error;await loadWindows();}catch(e){windowList=windowList.filter(w=>w!==name);renderWindowChips();renderUploadWindowSelect();renderWindowAdminList();}}
 
-    // Also run once on load (handles both normal load + OAuth redirect)
-    await checkUserSession();
+async function checkUserSession(){
+  try{
+    if(window.location.hash.includes('access_token')||window.location.search.includes('code=')){setTimeout(()=>{window.history.replaceState({},document.title,window.location.origin+window.location.pathname);},800);}
+    const{data:{session},error:sessionError}=await _supabaseClient.auth.getSession();
+    if(sessionError||!session){showView('view-login');return;}
+    currentUser=session.user;
+    const{data:profile}=await _supabaseClient.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
+    if(!profile){await loadDepartments();showView('view-onboarding');return;}
+    currentProfile=profile;
+    if(profile.status==='pending'){showView('view-pending');return;}
+    if(profile.status==='rejected'){document.getElementById('pendingMsg').innerText="Your access request was not approved. Contact Administrator.";showView('view-pending');return;}
+    setupMainApp();
+  }catch(e){console.error("Session check error:",e);showView('view-login');}
+}
+
+function showView(viewId){['view-login','view-onboarding','view-pending','view-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=(id===viewId)?'block':'none';});const logoutBtn=document.getElementById('btnLogout');if(logoutBtn)logoutBtn.style.display=(viewId==='view-login')?'none':'inline-flex';}
+
+async function loginWithGoogle(){
+  try{
+    const redirectTo=window.location.origin+window.location.pathname;
+    const{error}=await _supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{access_type:'offline',prompt:'select_account'}}});
+    if(error){alert("Login failed: "+error.message);console.error(error);}
+  }catch(err){alert("Login error: "+err.message);console.error(err);}
+}
+
+async function logout(){await _supabaseClient.auth.signOut();window.location.href=window.location.origin+window.location.pathname;}
+
+async function submitProfile(){
+  const fullName=document.getElementById('regFullName').value.trim(),designation=document.getElementById('regDesignation').value,department=document.getElementById('regDepartment').value;
+  if(!fullName)return alert("Please enter your Full Name");
+  const{error}=await _supabaseClient.from('profiles').upsert({id:currentUser.id,email:currentUser.email,full_name:fullName,designation,department,role:'viewer',status:'pending'});
+  if(error)alert("Error saving profile: "+error.message);else await checkUserSession();
+}
+
+function setupMainApp(){
+  showView('view-main');
+  const navInfo=document.getElementById('navUserInfo');
+  if(navInfo){navInfo.style.display='inline';navInfo.innerText=`${currentProfile.full_name||'Staff'} (${String(currentProfile.role||'viewer').toUpperCase()})`;}
+  if(currentProfile.role==='admin'){const adminTab=document.getElementById('tabBtnAdmin');if(adminTab)adminTab.style.display='flex';loadAdminUsers();}
+  if(currentProfile.role==='viewer'){const uploadCard=document.getElementById('uploadDeskCard');if(uploadCard)uploadCard.innerHTML=`<div style="text-align:center;padding:40px 10px;color:var(--text-muted);"><i class="fa-solid fa-lock" style="font-size:2.5rem;margin-bottom:12px;"></i><h3>Upload Restricted</h3><p>You have Viewer access. Contact the administrator to grant you Editor role for uploads.</p></div>`;}
+  loadDepartments();loadWindows();fetchDatabase();
+}
+
+async function loadAdminUsers(){
+  const tbody=document.getElementById('adminUserTableBody');
+  const{data:users,error}=await _supabaseClient.from('profiles').select('*').order('created_at',{ascending:false});
+  if(error||!users){tbody.innerHTML=`<tr><td colspan="4">Error loading users.</td></tr>`;return;}
+  tbody.innerHTML="";
+  users.forEach(u=>{
+    const isSelf=u.id===currentUser.id;
+    tbody.innerHTML+=`<tr><td><strong>${u.full_name||'No Name'}</strong><br><span style="color:var(--text-muted);font-size:11px;">${u.email}</span></td><td>${u.designation}<br><span style="color:var(--text-muted);font-size:11px;">${u.department}</span></td><td><span class="badge ${u.status==='approved'?'badge-w1':'badge-w2'}">${u.status} (${u.role})</span></td><td>${isSelf?'<span style="color:var(--text-muted);font-size:11px;">(You)</span>':`<button class="btn-table btn-approve-viewer" onclick="updateUserRole('${u.id}','approved','viewer')">Viewer</button><button class="btn-table btn-approve-editor" onclick="updateUserRole('${u.id}','approved','editor')">Editor</button><button class="btn-table btn-reject" onclick="updateUserRole('${u.id}','rejected','viewer')">Reject</button>`}</td></tr>`;
   });
+}
 
-  function getDirectImageUrl(url) {
-    if (!url) return '';
-    const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url).match(/id=([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      return `https://lh3.googleusercontent.com/d/${match[1]}`;
-    }
-    return url;
-  }
+async function updateUserRole(userId,status,role){const{error}=await _supabaseClient.from('profiles').update({status,role}).eq('id',userId);if(error)alert("Action failed: "+error.message);else loadAdminUsers();}
 
-  // ---------- DEPARTMENTS ----------
-  async function loadDepartments() {
-    try {
-      const { data, error } = await _supabaseClient.from('departments').select('name').order('name');
-      if (error || !data || data.length === 0) {
-        departmentList = [...DEFAULT_DEPTS];
-      } else {
-        departmentList = data.map(d => d.name);
-      }
-    } catch (e) {
-      departmentList = [...DEFAULT_DEPTS];
-    }
-    if (!departmentList.includes("Other")) departmentList.push("Other");
-    renderDeptChips();
-    renderRegDepartmentSelect();
-    if (currentProfile?.role === 'admin') renderDeptAdminList();
-  }
+function switchTab(tab){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));if(tab==='search'){document.getElementById('tabBtnSearch').classList.add('active');document.getElementById('tab-search').classList.add('active');}else if(tab==='upload'){document.getElementById('tabBtnUpload').classList.add('active');document.getElementById('tab-upload').classList.add('active');}else if(tab==='admin'){document.getElementById('tabBtnAdmin').classList.add('active');document.getElementById('tab-admin').classList.add('active');}}
 
-  function renderDeptChips() {
-    const container = document.getElementById('deptChips');
-    if (!container) return;
-    let html = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Dept:</span>
-                <div class="chip ${activeDeptFilter === 'ALL' ? 'active' : ''}" onclick="setDeptFilter('ALL', this)">All</div>`;
-    departmentList.forEach(dept => {
-      html += `<div class="chip ${activeDeptFilter === dept ? 'active' : ''}" onclick="setDeptFilter('${dept}', this)">${dept}</div>`;
-    });
-    container.innerHTML = html;
-  }
+function toggleTheme(){const isDark=document.body.getAttribute('data-theme')==='dark';document.body.setAttribute('data-theme',isDark?'light':'dark');document.getElementById('themeIcon').className=isDark?'fa-solid fa-moon':'fa-solid fa-sun';}
 
-  function renderRegDepartmentSelect() {
-    const select = document.getElementById('regDepartment');
-    if (!select) return;
-    select.innerHTML = departmentList.map(d => `<option value="${d}">${d}</option>`).join('');
-  }
+async function fetchDatabase(manual=false){
+  const countLabel=document.getElementById('resultsCount');
+  if(manual)countLabel.innerText="Syncing from Google Sheet...";
+  try{
+    const response=await fetch(SCRIPT_URL+"?t="+Date.now());
+    const data=await response.json();
+    if(Array.isArray(data)){
+      const fiveDaysAgo=new Date();fiveDaysAgo.setDate(fiveDaysAgo.getDate()-5);fiveDaysAgo.setHours(0,0,0,0);
+      rawRecords=data.filter(r=>{if(!r.timestamp)return true;const ts=new Date(r.timestamp);return isNaN(ts.getTime())||ts>=fiveDaysAgo;}).map(r=>{const dept=(r.dept||'').toString().trim();return{...r,dept:dept?dept:"Other"};});
+    }else rawRecords=[];
+    applyFilters();
+  }catch(err){console.error("Fetch error:",err);countLabel.innerText="Error syncing. Check Google Sheet.";}
+}
 
-  function renderDeptAdminList() {
-    const container = document.getElementById('deptListContainer');
-    if (!container) return;
-    if (departmentList.length === 0) {
-      container.innerHTML = '<p style="color: var(--text-muted);">No departments yet.</p>';
-      return;
-    }
-    container.innerHTML = departmentList.map(dept => `
-      <div class="dept-list-item">
-        <span>${dept}</span>
-        <button class="btn-table btn-delete-dept" onclick="deleteDepartment('${dept}')"><i class="fa-solid fa-trash"></i> Delete</button>
-      </div>
-    `).join('');
-  }
+function setWindowFilter(win,el){activeWindowFilter=win;document.querySelectorAll('#windowChips .chip').forEach(c=>c.classList.remove('active'));if(el)el.classList.add('active');applyFilters();}
+function setDeptFilter(dept,el){activeDeptFilter=dept;document.querySelectorAll('#deptChips .chip').forEach(c=>c.classList.remove('active'));if(el)el.classList.add('active');applyFilters();}
+function setDateFilter(dateValue,el){activeDateFilter=dateValue;document.querySelectorAll('#dateChipAll').forEach(c=>c.classList.remove('active'));if(dateValue==='ALL'){document.getElementById('dateChipAll').classList.add('active');document.getElementById('datePicker').value='';}else document.getElementById('dateChipAll').classList.remove('active');applyFilters();}
+function clearDateFilter(){setDateFilter('ALL',null);}
 
-  async function addDepartment() {
-    const input = document.getElementById('newDeptName');
-    const name = (input.value || '').trim();
-    if (!name) return alert('Enter a department name');
-    if (departmentList.includes(name)) return alert('Department already exists');
-    try {
-      const { error } = await _supabaseClient.from('departments').insert({ name });
-      if (error) throw error;
-      input.value = '';
-      await loadDepartments();
-    } catch (e) {
-      departmentList.push(name);
-      departmentList.sort();
-      renderDeptChips();
-      renderRegDepartmentSelect();
-      renderDeptAdminList();
-    }
-  }
+function applyFilters(){
+  const query=String(document.getElementById('liveSearchInput').value||'').toLowerCase().trim();
+  const grid=document.getElementById('resultsGrid'),countLabel=document.getElementById('resultsCount');
+  const filtered=rawRecords.filter(r=>{
+    const nameStr=String(r.name||'').toLowerCase(),crStr=String(r.crNo||'').toLowerCase(),deptStr=String(r.dept||'Other').toLowerCase();
+    const matchQuery=!query||nameStr.includes(query)||crStr.includes(query)||deptStr.includes(query);
+    const matchWindow=(activeWindowFilter==='ALL')||(String(r.windowType||'')===activeWindowFilter);
+    let matchDept=true;if(activeDeptFilter!=='ALL'){const filterDept=String(activeDeptFilter).toLowerCase().trim();matchDept=deptStr.trim()===filterDept||deptStr.includes(filterDept);}
+    let matchDate=true;if(activeDateFilter!=='ALL'&&r.timestamp){try{const d=new Date(r.timestamp);const yyyy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');matchDate=(`${yyyy}-${mm}-${dd}`===activeDateFilter);}catch(e){matchDate=false;}}
+    return matchQuery&&matchWindow&&matchDept&&matchDate;
+  });
+  currentlyFilteredRecords=[...filtered];
+  countLabel.innerText=`Showing ${filtered.length} report(s) (last 5 days)`;
+  grid.innerHTML="";
+  if(!filtered.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No matching reports found.</div>`;updateBulkBar();return;}
+  const isAdmin=currentProfile&&currentProfile.role==='admin';
+  const isEditorOrAdmin=currentProfile&&(currentProfile.role==='admin'||currentProfile.role==='editor');
+  [...filtered].reverse().forEach(r=>{
+    let badgeClass='badge-other';if(r.windowType==='Window 1')badgeClass='badge-w1';else if(r.windowType==='Window 2')badgeClass='badge-w2';
+    const directUrl=getDirectImageUrl(r.imgUrl),uniqueId=`${r.rowIndex}_${r.crNo}`.replace(/\s+/g,'_'),isSelected=selectedReports.has(uniqueId);
+    let dateStr='';try{const d=new Date(r.timestamp);dateStr=d.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){dateStr=r.timestamp;}
+    const card=document.createElement('div');card.className='result-card'+(isSelected?' selected':'');card.dataset.id=uniqueId;
+    card.innerHTML=`<input type="checkbox" class="card-checkbox" ${isSelected?'checked':''} onchange="toggleSelect('${uniqueId}',this.checked,this)"><div><div style="display:flex;justify-content:space-between;align-items:flex-start;padding-left:26px;"><strong>${r.name||'Unknown Patient'}</strong><span class="badge ${badgeClass}">${r.windowType||'—'}</span></div><div style="font-size:13px;color:var(--text-muted);margin-top:4px;padding-left:26px;">CR: <span style="color:var(--text-main);font-weight:600;">${r.crNo||'N/A'}</span></div><div style="font-size:13px;color:var(--text-muted);padding-left:26px;">Dept: <span style="color:var(--text-main);font-weight:600;">${r.dept||'Other'}</span></div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;padding-left:26px;"><i class="fa-regular fa-clock"></i> ${dateStr}</div></div><img src="${directUrl}" class="img-preview" onclick="openModal('${directUrl}')" onerror="this.src='https://via.placeholder.com/300x140?text=Image+Not+Available';this.style.objectFit='contain';" loading="lazy"><div style="display:flex;gap:6px;"><button class="btn-action btn-view" onclick="openModal('${directUrl}')"><i class="fa-solid fa-expand"></i> View</button>${isEditorOrAdmin?`<button class="btn-action btn-edit" onclick="openEditModal(${r.rowIndex})"><i class="fa-solid fa-pen"></i> Edit</button>`:''}${isAdmin?`<button class="btn-action btn-del" onclick="deleteEntry(${r.rowIndex},'${String(r.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>`:''}<button class="btn-action btn-wa" onclick="shareWhatsApp('${String(r.name||'').replace(/'/g,"\\'")}','${r.crNo}','${r.dept||'Other'}','${r.imgUrl}','${directUrl}')"><i class="fa-brands fa-whatsapp"></i> Share</button></div>`;
+    grid.appendChild(card);
+  });
+  updateBulkBar();
+}
 
-  async function deleteDepartment(name) {
-    if (name === "Other") return alert('"Other" cannot be deleted.');
-    if (!confirm(`Delete department "${name}"?`)) return;
-    try {
-      const { error } = await _supabaseClient.from('departments').delete().eq('name', name);
-      if (error) throw error;
-      await loadDepartments();
-    } catch (e) {
-      departmentList = departmentList.filter(d => d !== name);
-      renderDeptChips();
-      renderRegDepartmentSelect();
-      renderDeptAdminList();
-    }
-  }
+function openEditModal(rowIndex){const record=rawRecords.find(r=>r.rowIndex===rowIndex);if(!record)return;document.getElementById('editRowIndex').value=rowIndex;document.getElementById('editName').value=record.name||'';document.getElementById('editCrNo').value=record.crNo||'';document.getElementById('editDept').value=record.dept||'';document.getElementById('editModal').classList.add('active');}
+function closeEditModal(){document.getElementById('editModal').classList.remove('active');}
 
-  // ---------- WINDOWS ----------
-  async function loadWindows() {
-    try {
-      const { data, error } = await _supabaseClient.from('windows').select('name').order('name');
-      if (error || !data || data.length === 0) {
-        windowList = [...DEFAULT_WINDOWS];
-      } else {
-        windowList = data.map(w => w.name);
-      }
-    } catch (e) {
-      windowList = [...DEFAULT_WINDOWS];
-    }
-    renderWindowChips();
-    renderUploadWindowSelect();
-    if (currentProfile?.role === 'admin') renderWindowAdminList();
-  }
+async function saveRecordCorrection(){
+  const rowIndex=parseInt(document.getElementById('editRowIndex').value);
+  let name=document.getElementById('editName').value.trim(),cr_no=document.getElementById('editCrNo').value.trim(),dept=document.getElementById('editDept').value.trim();
+  if(!dept)dept="Other";
+  const btn=document.getElementById('btnSaveEdit');btn.disabled=true;btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+  try{
+    const response=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"edit",rowIndex,name,cr_no,dept,lab_data:null})});
+    const res=await response.json();
+    if(res.status==='success'){closeEditModal();await fetchDatabase(true);}else alert("Update failed: "+res.message);
+  }catch(err){alert("Error saving correction: "+err.message);}finally{btn.disabled=false;btn.innerHTML=`<i class="fa-solid fa-check"></i> Save Correction`;}
+}
 
-  function renderWindowChips() {
-    const container = document.getElementById('windowChips');
-    if (!container) return;
-    let html = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">Window:</span>
-                <div class="chip ${activeWindowFilter === 'ALL' ? 'active' : ''}" onclick="setWindowFilter('ALL', this)">All</div>`;
-    windowList.forEach(w => {
-      html += `<div class="chip ${activeWindowFilter === w ? 'active' : ''}" onclick="setWindowFilter('${w}', this)">${w}</div>`;
-    });
-    container.innerHTML = html;
-  }
+async function deleteEntry(rowIndex,patientName){if(!confirm(`Are you sure you want to permanently delete the entry for "${patientName||'this patient'}"?`))return;try{const response=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"delete",rowIndex})});const res=await response.json();if(res.status==='success')await fetchDatabase(true);else alert("Delete failed: "+res.message);}catch(err){alert("Error deleting entry: "+err.message);}}
 
-  function renderUploadWindowSelect() {
-    const select = document.getElementById('uploadWindowType');
-    if (!select) return;
-    select.innerHTML = windowList.map(w => `<option value="${w}">${w}</option>`).join('');
-  }
+function toggleSelect(id,isChecked,checkbox){const card=checkbox?checkbox.closest('.result-card'):document.querySelector(`.result-card[data-id="${id}"]`);if(isChecked){const row=rawRecords.find(r=>`${r.rowIndex}_${r.crNo}`.replace(/\s+/g,'_')===id);if(row){selectedReports.set(id,{rowIndex:row.rowIndex,name:row.name,crNo:row.crNo,dept:row.dept||"Other",imgUrl:row.imgUrl,directUrl:getDirectImageUrl(row.imgUrl),windowType:row.windowType});if(card)card.classList.add('selected');}}else{selectedReports.delete(id);if(card)card.classList.remove('selected');}updateBulkBar();}
+function toggleSelectAll(isChecked){currentlyFilteredRecords.forEach(r=>{const uniqueId=`${r.rowIndex}_${r.crNo}`.replace(/\s+/g,'_');toggleSelect(uniqueId,isChecked,null);});document.querySelectorAll('.card-checkbox').forEach(cb=>cb.checked=isChecked);}
+function updateBulkBar(){const bar=document.getElementById('bulkBar'),countEl=document.getElementById('selectedCount'),delBtn=document.getElementById('btnBulkDelete'),count=selectedReports.size;countEl.innerText=`${count} selected`;bar.classList.toggle('active',count>0);const isAdmin=currentProfile&&currentProfile.role==='admin';if(delBtn)delBtn.style.display=(isAdmin&&count>0)?'flex':'none';const selectAllCb=document.getElementById('selectAllCheckbox');if(selectAllCb)selectAllCb.checked=(count>0&&count===currentlyFilteredRecords.length);}
+function clearSelection(){selectedReports.clear();document.querySelectorAll('.card-checkbox').forEach(cb=>cb.checked=false);document.querySelectorAll('.result-card').forEach(c=>c.classList.remove('selected'));const selectAllCb=document.getElementById('selectAllCheckbox');if(selectAllCb)selectAllCb.checked=false;updateBulkBar();}
 
-  function renderWindowAdminList() {
-    const container = document.getElementById('windowListContainer');
-    if (!container) return;
-    if (windowList.length === 0) {
-      container.innerHTML = '<p style="color: var(--text-muted);">No windows yet.</p>';
-      return;
-    }
-    container.innerHTML = windowList.map(w => `
-      <div class="dept-list-item">
-        <span>${w}</span>
-        <button class="btn-table btn-delete-dept" onclick="deleteWindow('${w}')"><i class="fa-solid fa-trash"></i> Delete</button>
-      </div>
-    `).join('');
-  }
+async function deleteSelectedRecords(){if(!selectedReports.size)return;const count=selectedReports.size;if(!confirm(`Are you sure you want to permanently delete ALL ${count} selected records from Google Sheets?`))return;const rowIndices=Array.from(selectedReports.values()).map(r=>r.rowIndex);const delBtn=document.getElementById('btnBulkDelete');delBtn.disabled=true;delBtn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Deleting...`;try{const response=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"bulk_delete",rowIndices})});const res=await response.json();if(res.status==='success'){clearSelection();await fetchDatabase(true);}else alert("Bulk delete failed: "+res.message);}catch(err){alert("Error deleting entries: "+err.message);}finally{delBtn.disabled=false;delBtn.innerHTML=`<i class="fa-solid fa-trash"></i> Delete Selected`;}}
 
-  async function addWindow() {
-    const input = document.getElementById('newWindowName');
-    const name = (input.value || '').trim();
-    if (!name) return alert('Enter a window name');
-    if (windowList.includes(name)) return alert('Window already exists');
-    try {
-      const { error } = await _supabaseClient.from('windows').insert({ name });
-      if (error) throw error;
-      input.value = '';
-      await loadWindows();
-    } catch (e) {
-      windowList.push(name);
-      windowList.sort();
-      renderWindowChips();
-      renderUploadWindowSelect();
-      renderWindowAdminList();
-    }
-  }
+async function shareWhatsApp(name,crNo,dept,imgUrl,directUrl){const text=`*LNJP Hospital Lab Report*\n👤 *Patient:* ${name}\n🔢 *CR No:* ${crNo}\n🏥 *Dept:* ${dept||'Other'}\n📄 *View Sheet:* ${imgUrl||directUrl}`;if(navigator.share&&navigator.canShare){try{const response=await fetch(directUrl||imgUrl);const blob=await response.blob();const file=new File([blob],`lab_${crNo||'report'}.jpg`,{type:blob.type||'image/jpeg'});if(navigator.canShare({files:[file],text})){await navigator.share({files:[file],title:'LNJP Lab Report',text});return;}}catch(e){console.log('Web Share with file failed, falling back to text',e);}}window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`,'_blank');}
+function shareSelectedWhatsApp(){if(!selectedReports.size)return;let message=`*LNJP Hospital – Lab Reports (${selectedReports.size})*\n\n`,i=1;selectedReports.forEach(r=>{message+=`*${i}. ${r.name||'Unknown'}*\n🔢 CR: ${r.crNo||'N/A'}\n🏥 Dept: ${r.dept||'Other'}\n🪟 ${r.windowType||'—'}\n📄 ${r.imgUrl||r.directUrl}\n\n`;i++;});message+=`_Shared from LNJP LabHub_`;window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`,'_blank');}
 
-  async function deleteWindow(name) {
-    if (!confirm(`Delete window "${name}"? Existing reports will keep their old window label.`)) return;
-    try {
-      const { error } = await _supabaseClient.from('windows').delete().eq('name', name);
-      if (error) throw error;
-      await loadWindows();
-    } catch (e) {
-      windowList = windowList.filter(w => w !== name);
-      renderWindowChips();
-      renderUploadWindowSelect();
-      renderWindowAdminList();
-    }
-  }
+function openModal(url){const modal=document.getElementById('imageModal');document.getElementById('modalImage').src=url;document.getElementById('modalDownloadLink').href=url;currentZoom=1;currentRotation=0;updateTransform();modal.classList.add('active');}
+function closeModal(){document.getElementById('imageModal').classList.remove('active');}
+function zoomImage(factor){currentZoom=Math.max(.5,Math.min(currentZoom+factor,4));updateTransform();}
+function rotateImage(){currentRotation=(currentRotation+90)%360;updateTransform();}
+function updateTransform(){document.getElementById('modalImage').style.transform=`scale(${currentZoom}) rotate(${currentRotation}deg)`;}
 
-  // ---------- AUTH & PROFILE (FIXED FOR MOBILE) ----------
-  async function checkUserSession() {
-    try {
-      // Clean any leftover auth params from the URL after successful login
-      if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-        // Let Supabase finish processing, then clean the URL
-        setTimeout(() => {
-          const cleanUrl = window.location.origin + window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        }, 800);
-      }
-
-      const { data: { session }, error: sessionError } = await _supabaseClient.auth.getSession();
-
-      if (sessionError) {
-        console.error("Session error:", sessionError);
-        showView('view-login');
-        return;
-      }
-
-      if (!session) {
-        showView('view-login');
-        return;
-      }
-
-      currentUser = session.user;
-
-      // Load profile
-      const { data: profile, error: profileError } = await _supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('id', currentUser.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        // Still allow the user to continue if we at least have a session
-      }
-
-      if (!profile) {
-        await loadDepartments();
-        showView('view-onboarding');
-        return;
-      }
-
-      currentProfile = profile;
-
-      if (profile.status === 'pending') {
-        showView('view-pending');
-        return;
-      }
-
-      if (profile.status === 'rejected') {
-        document.getElementById('pendingMsg').innerText = "Your access request was not approved. Contact Administrator.";
-        showView('view-pending');
-        return;
-      }
-
-      // Approved → main app
-      setupMainApp();
-
-    } catch (e) {
-      console.error("Session check error:", e);
-      // Show a visible message on mobile so you can see what went wrong
-      alert("Login error on this device: " + (e.message || e));
-      showView('view-login');
-    }
-  }
-
-  function showView(viewId) {
-    ['view-login', 'view-onboarding', 'view-pending', 'view-main'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = (id === viewId) ? 'block' : 'none';
-    });
-    const logoutBtn = document.getElementById('btnLogout');
-    if (logoutBtn) logoutBtn.style.display = (viewId === 'view-login') ? 'none' : 'inline-flex';
-  }
-
-  async function loginWithGoogle() {
-    try {
-      // Clean redirect URL (very important for mobile + GitHub Pages path)
-      const redirectTo = window.location.origin + window.location.pathname;
-
-      const { data, error } = await _supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account'   // forces account chooser (helps on mobile)
-          }
-        }
-      });
-
-      if (error) {
-        alert("Login failed: " + error.message);
-        console.error(error);
-      }
-      // On success the browser will redirect to Google then come back
-    } catch (err) {
-      alert("Login error: " + err.message);
-      console.error(err);
-    }
-  }
-
-  async function logout() {
-    await _supabaseClient.auth.signOut();
-    window.location.href = window.location.origin + window.location.pathname;
-  }
-
-  async function submitProfile() {
-    const fullName = document.getElementById('regFullName').value.trim();
-    const designation = document.getElementById('regDesignation').value;
-    const department = document.getElementById('regDepartment').value;
-    if (!fullName) return alert("Please enter your Full Name");
-
-    const { error } = await _supabaseClient.from('profiles').upsert({
-      id: currentUser.id,
-      email: currentUser.email,
-      full_name: fullName,
-      designation: designation,
-      department: department,
-      role: 'viewer',
-      status: 'pending'
-    });
-
-    if (error) {
-      alert("Error saving profile: " + error.message);
-    } else {
-      await checkUserSession();
-    }
-  }
-
-  function setupMainApp() {
-    showView('view-main');
-    const navInfo = document.getElementById('navUserInfo');
-    if (navInfo) {
-      navInfo.style.display = 'inline';
-      navInfo.innerText = `${currentProfile.full_name || 'Staff'} (${String(currentProfile.role || 'viewer').toUpperCase()})`;
-    }
-    if (currentProfile.role === 'admin') {
-      const adminTab = document.getElementById('tabBtnAdmin');
-      if (adminTab) adminTab.style.display = 'flex';
-      loadAdminUsers();
-    }
-    if (currentProfile.role === 'viewer') {
-      const uploadCard = document.getElementById('uploadDeskCard');
-      if (uploadCard) {
-        uploadCard.innerHTML = `
-          <div style="text-align: center; padding: 40px 10px; color: var(--text-muted);">
-            <i class="fa-solid fa-lock" style="font-size: 2.5rem; margin-bottom: 12px;"></i>
-            <h3>Upload Restricted</h3>
-            <p>You have Viewer access. Contact the administrator to grant you Editor role for uploads.</p>
-          </div>
-        `;
-      }
-    }
-    loadDepartments();
-    loadWindows();
-    fetchDatabase();
-  }
-
+function compressImage(file){return new Promise(resolve=>{const reader=new FileReader();reader.readAsDataURL(file);reader.onload=e=>{const img=new Image();img.src=e.target.result;img.onload=()=>{const canvas=document.createElement('canvas');const MAX_WIDTH=1800;let width=img.width,height=img.height;if(width>MAX_WIDTH){height=Math.round((height*MAX_WIDTH)/width);width=MAX_WIDTH;}canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,width,height);resolve(canvas.toDataURL('image/jpeg',.82));};};});}
+function handleFileSelection(e){selectedFiles=selectedFiles.concat(Array.from(e.target.files)).slice(0,30);renderThumbnailTray();}
+function renderThumbnailTray(){const tray=document.getElementById('previewTray');tray.innerHTML="";selectedFiles.forEach((file,index)=>{const box=document.createElement('div');box.className='thumb-box';box.innerHTML=`<img src="${URL.createObjectURL(file)}"><button class="thumb-remove" onclick="selectedFiles.splice(${index},1);renderThumbnailTray();">×</button>`;tray.appendChild(box);});}
+async function startBatchUpload(){if(!selectedFiles.length)return alert("Select photos first!");const windowType=document.getElementById('uploadWindowType').value,statusText=document.getElementById('uploadStatusText'),btn=document.getElementById('btnUpload');btn.disabled=true;let successCount=0;for(let i=0;i<selectedFiles.length;i++){statusText.innerText=`Processing sheet ${i+1} of ${selectedFiles.length} with AI...`;try{const base64Data=await compressImage(selectedFiles[i]);const response=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({image:base64Data,window:windowType,action:"upload"})});const data=await response.json();if(data.status==="success")successCount++;}catch(err){console.error(err);}}statusText.innerText=`✅ Logged ${successCount} of ${selectedFiles.length} sheets!`;selectedFiles=[];renderThumbnailTray();btn.disabled=false;fetchDatabase();}
 </script>
-    async function loadAdminUsers() {
-      const tbody = document.getElementById('adminUserTableBody');
-      const { data: users, error } = await _supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
-      if (error || !users) {
-        tbody.innerHTML = `<tr><td colspan="4">Error loading users.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = "";
-      users.forEach(u => {
-        const isSelf = u.id === currentUser.id;
-        tbody.innerHTML += `
-          <tr>
-            <td><strong>${u.full_name || 'No Name'}</strong><br><span style="color: var(--text-muted); font-size: 11px;">${u.email}</span></td>
-            <td>${u.designation}<br><span style="color: var(--text-muted); font-size: 11px;">${u.department}</span></td>
-            <td><span class="badge ${u.status === 'approved' ? 'badge-w1' : 'badge-w2'}">${u.status} (${u.role})</span></td>
-            <td>
-              ${isSelf ? '<span style="color: var(--text-muted); font-size: 11px;">(You)</span>' : `
-                <button class="btn-table btn-approve-viewer" onclick="updateUserRole('${u.id}', 'approved', 'viewer')">Viewer</button>
-                <button class="btn-table btn-approve-editor" onclick="updateUserRole('${u.id}', 'approved', 'editor')">Editor</button>
-                <button class="btn-table btn-reject" onclick="updateUserRole('${u.id}', 'rejected', 'viewer')">Reject</button>
-              `}
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    async function updateUserRole(userId, status, role) {
-      const { error } = await _supabaseClient.from('profiles').update({ status, role }).eq('id', userId);
-      if (error) alert("Action failed: " + error.message);
-      else loadAdminUsers();
-    }
-
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      if (tab === 'search') {
-        document.getElementById('tabBtnSearch').classList.add('active');
-        document.getElementById('tab-search').classList.add('active');
-      } else if (tab === 'upload') {
-        document.getElementById('tabBtnUpload').classList.add('active');
-        document.getElementById('tab-upload').classList.add('active');
-      } else if (tab === 'admin') {
-        document.getElementById('tabBtnAdmin').classList.add('active');
-        document.getElementById('tab-admin').classList.add('active');
-      }
-    }
-
-    function toggleTheme() {
-      const isDark = document.body.getAttribute('data-theme') === 'dark';
-      document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
-      document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-    }
-
-    // ---------- DATA FETCH & FILTERS ----------
-    async function fetchDatabase(manual = false) {
-      const countLabel = document.getElementById('resultsCount');
-      if (manual) countLabel.innerText = "Syncing from Google Sheet...";
-      try {
-        const response = await fetch(SCRIPT_URL + "?t=" + Date.now());
-        const data = await response.json();
-        
-        if (Array.isArray(data)) {
-          const fiveDaysAgo = new Date();
-          fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-          fiveDaysAgo.setHours(0, 0, 0, 0);
-
-          rawRecords = data.filter(r => {
-            if (!r.timestamp) return true;
-            const ts = new Date(r.timestamp);
-            return isNaN(ts.getTime()) || ts >= fiveDaysAgo;
-          }).map(r => {
-            // Auto-assign "Other" if dept is missing / empty
-            const dept = (r.dept || '').toString().trim();
-            return {
-              ...r,
-              dept: dept ? dept : "Other"
-            };
-          });
-        } else {
-          rawRecords = [];
-        }
-
-        applyFilters();
-      } catch (err) {
-        console.error("Fetch error:", err);
-        countLabel.innerText = "Error syncing. Check Google Sheet.";
-      }
-    }
-
-    function setWindowFilter(win, el) {
-      activeWindowFilter = win;
-      document.querySelectorAll('#windowChips .chip').forEach(c => c.classList.remove('active'));
-      if (el) el.classList.add('active');
-      applyFilters();
-    }
-
-    function setDeptFilter(dept, el) {
-      activeDeptFilter = dept;
-      document.querySelectorAll('#deptChips .chip').forEach(c => c.classList.remove('active'));
-      if (el) el.classList.add('active');
-      applyFilters();
-    }
-
-    function setDateFilter(dateValue, el) {
-      activeDateFilter = dateValue;
-      document.querySelectorAll('#dateChipAll').forEach(c => c.classList.remove('active'));
-      if (dateValue === 'ALL') {
-        document.getElementById('dateChipAll').classList.add('active');
-        document.getElementById('datePicker').value = '';
-      } else {
-        document.getElementById('dateChipAll').classList.remove('active');
-      }
-      applyFilters();
-    }
-
-    function clearDateFilter() {
-      setDateFilter('ALL', null);
-    }
-
-    function applyFilters() {
-      const query = String(document.getElementById('liveSearchInput').value || '').toLowerCase().trim();
-      const grid = document.getElementById('resultsGrid');
-      const countLabel = document.getElementById('resultsCount');
-
-      const filtered = rawRecords.filter(r => {
-        const nameStr = String(r.name || '').toLowerCase();
-        const crStr = String(r.crNo || '').toLowerCase();
-        const deptStr = String(r.dept || 'Other').toLowerCase();
-        const matchQuery = !query || nameStr.includes(query) || crStr.includes(query) || deptStr.includes(query);
-
-        const matchWindow = (activeWindowFilter === 'ALL') || (String(r.windowType || '') === activeWindowFilter);
-        
-        let matchDept = true;
-        if (activeDeptFilter !== 'ALL') {
-          const filterDept = String(activeDeptFilter).toLowerCase().trim();
-          matchDept = deptStr.trim() === filterDept || deptStr.includes(filterDept);
-        }
-
-        let matchDate = true;
-        if (activeDateFilter !== 'ALL' && r.timestamp) {
-          try {
-            const d = new Date(r.timestamp);
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            matchDate = (`${yyyy}-${mm}-${dd}` === activeDateFilter);
-          } catch (e) {
-            matchDate = false;
-          }
-        }
-        return matchQuery && matchWindow && matchDept && matchDate;
-      });
-
-      currentlyFilteredRecords = [...filtered];
-      countLabel.innerText = `Showing ${filtered.length} report(s) (last 5 days)`;
-      grid.innerHTML = "";
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No matching reports found.</div>`;
-        updateBulkBar();
-        return;
-      }
-
-      const isAdmin = currentProfile && currentProfile.role === 'admin';
-      const isEditorOrAdmin = currentProfile && (currentProfile.role === 'admin' || currentProfile.role === 'editor');
-
-      [...filtered].reverse().forEach(r => {
-        // Badge colour logic (simple)
-        let badgeClass = 'badge-other';
-        if (r.windowType === 'Window 1') badgeClass = 'badge-w1';
-        else if (r.windowType === 'Window 2') badgeClass = 'badge-w2';
-
-        const directUrl = getDirectImageUrl(r.imgUrl);
-        const uniqueId = `${r.rowIndex}_${r.crNo}`.replace(/\s+/g, '_');
-        const isSelected = selectedReports.has(uniqueId);
-
-        let dateStr = '';
-        try {
-          const d = new Date(r.timestamp);
-          dateStr = d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        } catch(e) { dateStr = r.timestamp; }
-
-        // NO CBC / labData display any more
-        const card = document.createElement('div');
-        card.className = 'result-card' + (isSelected ? ' selected' : '');
-        card.dataset.id = uniqueId;
-
-        card.innerHTML = `
-          <input type="checkbox" class="card-checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelect('${uniqueId}', this.checked, this)">
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-left: 26px;">
-              <strong>${r.name || 'Unknown Patient'}</strong>
-              <span class="badge ${badgeClass}">${r.windowType || '—'}</span>
-            </div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px; padding-left: 26px;">
-              CR: <span style="color:var(--text-main); font-weight:600;">${r.crNo || 'N/A'}</span>
-            </div>
-            <div style="font-size: 13px; color: var(--text-muted); padding-left: 26px;">
-              Dept: <span style="color:var(--text-main); font-weight:600;">${r.dept || 'Other'}</span>
-            </div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px; padding-left: 26px;">
-              <i class="fa-regular fa-clock"></i> ${dateStr}
-            </div>
-          </div>
-          <img src="${directUrl}" class="img-preview" onclick="openModal('${directUrl}')" onerror="this.src='https://via.placeholder.com/300x140?text=Image+Not+Available'; this.style.objectFit='contain';" loading="lazy">
-          <div style="display: flex; gap: 6px;">
-            <button class="btn-action btn-view" onclick="openModal('${directUrl}')"><i class="fa-solid fa-expand"></i> View</button>
-            ${isEditorOrAdmin ? `<button class="btn-action btn-edit" onclick="openEditModal(${r.rowIndex})"><i class="fa-solid fa-pen"></i> Edit</button>` : ''}
-            ${isAdmin ? `<button class="btn-action btn-del" onclick="deleteEntry(${r.rowIndex}, '${String(r.name || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i></button>` : ''}
-            <button class="btn-action btn-wa" onclick="shareWhatsApp('${String(r.name||'').replace(/'/g,"\\'")}', '${r.crNo}', '${r.dept || 'Other'}', '${r.imgUrl}', '${directUrl}')"><i class="fa-brands fa-whatsapp"></i> Share</button>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-
-      updateBulkBar();
-    }
-
-    // ---------- EDIT (no CBC) ----------
-    function openEditModal(rowIndex) {
-      const record = rawRecords.find(r => r.rowIndex === rowIndex);
-      if (!record) return;
-
-      document.getElementById('editRowIndex').value = rowIndex;
-      document.getElementById('editName').value = record.name || '';
-      document.getElementById('editCrNo').value = record.crNo || '';
-      document.getElementById('editDept').value = record.dept || '';
-
-      document.getElementById('editModal').classList.add('active');
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.remove('active');
-    }
-
-    async function saveRecordCorrection() {
-      const rowIndex = parseInt(document.getElementById('editRowIndex').value);
-      let name = document.getElementById('editName').value.trim();
-      let cr_no = document.getElementById('editCrNo').value.trim();
-      let dept = document.getElementById('editDept').value.trim();
-      // Auto Other if empty
-      if (!dept) dept = "Other";
-
-      const btn = document.getElementById('btnSaveEdit');
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
-
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "edit",
-            rowIndex: rowIndex,
-            name: name,
-            cr_no: cr_no,
-            dept: dept,
-            lab_data: null          // no longer sending CBC data
-          })
-        });
-
-        const res = await response.json();
-        if (res.status === 'success') {
-          closeEditModal();
-          await fetchDatabase(true);
-        } else {
-          alert("Update failed: " + res.message);
-        }
-      } catch (err) {
-        alert("Error saving correction: " + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-check"></i> Save Correction`;
-      }
-    }
-
-    // ========== SINGLE RECORD DELETE ==========
-    async function deleteEntry(rowIndex, patientName) {
-      if (!confirm(`Are you sure you want to permanently delete the entry for "${patientName || 'this patient'}"?`)) {
-        return;
-      }
-
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "delete",
-            rowIndex: rowIndex
-          })
-        });
-
-        const res = await response.json();
-        if (res.status === 'success') {
-          await fetchDatabase(true);
-        } else {
-          alert("Delete failed: " + res.message);
-        }
-      } catch (err) {
-        alert("Error deleting entry: " + err.message);
-      }
-    }
-
-    // ========== BULK SELECTION & ACTIONS ==========
-    function toggleSelect(id, isChecked, checkbox) {
-      const card = checkbox ? checkbox.closest('.result-card') : document.querySelector(`.result-card[data-id="${id}"]`);
-      if (isChecked) {
-        const row = rawRecords.find(r => `${r.rowIndex}_${r.crNo}`.replace(/\s+/g, '_') === id);
-        if (row) {
-          selectedReports.set(id, { 
-            rowIndex: row.rowIndex,
-            name: row.name, 
-            crNo: row.crNo, 
-            dept: row.dept || "Other", 
-            imgUrl: row.imgUrl,
-            directUrl: getDirectImageUrl(row.imgUrl),
-            windowType: row.windowType 
-          });
-          if (card) card.classList.add('selected');
-        }
-      } else {
-        selectedReports.delete(id);
-        if (card) card.classList.remove('selected');
-      }
-      updateBulkBar();
-    }
-
-    function toggleSelectAll(isChecked) {
-      currentlyFilteredRecords.forEach(r => {
-        const uniqueId = `${r.rowIndex}_${r.crNo}`.replace(/\s+/g, '_');
-        toggleSelect(uniqueId, isChecked, null);
-      });
-      document.querySelectorAll('.card-checkbox').forEach(cb => cb.checked = isChecked);
-    }
-
-    function updateBulkBar() {
-      const bar = document.getElementById('bulkBar');
-      const countEl = document.getElementById('selectedCount');
-      const delBtn = document.getElementById('btnBulkDelete');
-      const count = selectedReports.size;
-
-      countEl.innerText = `${count} selected`;
-      bar.classList.toggle('active', count > 0);
-
-      const isAdmin = currentProfile && currentProfile.role === 'admin';
-      if (delBtn) delBtn.style.display = (isAdmin && count > 0) ? 'flex' : 'none';
-
-      const selectAllCb = document.getElementById('selectAllCheckbox');
-      if (selectAllCb) {
-        selectAllCb.checked = (count > 0 && count === currentlyFilteredRecords.length);
-      }
-    }
-
-    function clearSelection() {
-      selectedReports.clear();
-      document.querySelectorAll('.card-checkbox').forEach(cb => cb.checked = false);
-      document.querySelectorAll('.result-card').forEach(c => c.classList.remove('selected'));
-      const selectAllCb = document.getElementById('selectAllCheckbox');
-      if (selectAllCb) selectAllCb.checked = false;
-      updateBulkBar();
-    }
-
-    async function deleteSelectedRecords() {
-      if (selectedReports.size === 0) return;
-      
-      const count = selectedReports.size;
-      if (!confirm(`Are you sure you want to permanently delete ALL ${count} selected records from Google Sheets?`)) {
-        return;
-      }
-
-      const rowIndices = Array.from(selectedReports.values()).map(r => r.rowIndex);
-      const delBtn = document.getElementById('btnBulkDelete');
-      
-      delBtn.disabled = true;
-      delBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Deleting...`;
-
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "bulk_delete",
-            rowIndices: rowIndices
-          })
-        });
-
-        const res = await response.json();
-        if (res.status === 'success') {
-          clearSelection();
-          await fetchDatabase(true);
-        } else {
-          alert("Bulk delete failed: " + res.message);
-        }
-      } catch (err) {
-        alert("Error deleting entries: " + err.message);
-      } finally {
-        delBtn.disabled = false;
-        delBtn.innerHTML = `<i class="fa-solid fa-trash"></i> Delete Selected`;
-      }
-    }
-
-    // ---------- WHATSAPP (best-effort real photo on mobile) ----------
-    async function shareWhatsApp(name, crNo, dept, imgUrl, directUrl) {
-      const text = `*LNJP Hospital Lab Report*\n👤 *Patient:* ${name}\n🔢 *CR No:* ${crNo}\n🏥 *Dept:* ${dept || 'Other'}\n📄 *View Sheet:* ${imgUrl || directUrl}`;
-
-      // Try Web Share API with image (works well on mobile Chrome/Safari)
-      if (navigator.share && navigator.canShare) {
-        try {
-          const response = await fetch(directUrl || imgUrl);
-          const blob = await response.blob();
-          const file = new File([blob], `lab_${crNo || 'report'}.jpg`, { type: blob.type || 'image/jpeg' });
-          
-          if (navigator.canShare({ files: [file], text })) {
-            await navigator.share({
-              files: [file],
-              title: 'LNJP Lab Report',
-              text: text
-            });
-            return;
-          }
-        } catch (e) {
-          console.log('Web Share with file failed, falling back to text', e);
-        }
-      }
-
-      // Fallback: classic WhatsApp text + link
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-    }
-
-    function shareSelectedWhatsApp() {
-      if (selectedReports.size === 0) return;
-      let message = `*LNJP Hospital – Lab Reports (${selectedReports.size})*\n\n`;
-      let i = 1;
-      selectedReports.forEach(r => {
-        message += `*${i}. ${r.name || 'Unknown'}*\n🔢 CR: ${r.crNo || 'N/A'}\n🏥 Dept: ${r.dept || 'Other'}\n🪟 ${r.windowType || '—'}\n📄 ${r.imgUrl || r.directUrl}\n\n`;
-        i++;
-      });
-      message += `_Shared from LNJP LabHub_`;
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
-    }
-
-    // ========== LIGHTBOX MODAL ==========
-    function openModal(url) {
-      const modal = document.getElementById('imageModal');
-      document.getElementById('modalImage').src = url;
-      document.getElementById('modalDownloadLink').href = url;
-      currentZoom = 1;
-      currentRotation = 0;
-      updateTransform();
-      modal.classList.add('active');
-    }
-    function closeModal() { document.getElementById('imageModal').classList.remove('active'); }
-    function zoomImage(factor) { currentZoom = Math.max(0.5, Math.min(currentZoom + factor, 4)); updateTransform(); }
-    function rotateImage() { currentRotation = (currentRotation + 90) % 360; updateTransform(); }
-    function updateTransform() { document.getElementById('modalImage').style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`; }
-
-    // ========== UPLOAD PIPELINE ==========
-    function compressImage(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-          const img = new Image();
-          img.src = event.target.result;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1800;
-            let width = img.width, height = img.height;
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-            canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.82));
-          };
-        };
-      });
-    }
-
-    function handleFileSelection(e) {
-      selectedFiles = selectedFiles.concat(Array.from(e.target.files)).slice(0, 30);
-      renderThumbnailTray();
-    }
-
-    function renderThumbnailTray() {
-      const tray = document.getElementById('previewTray');
-      tray.innerHTML = "";
-      selectedFiles.forEach((file, index) => {
-        const box = document.createElement('div');
-        box.className = 'thumb-box';
-        box.innerHTML = `<img src="${URL.createObjectURL(file)}"><button class="thumb-remove" onclick="selectedFiles.splice(${index}, 1); renderThumbnailTray();">×</button>`;
-        tray.appendChild(box);
-      });
-    }
-
-    async function startBatchUpload() {
-      if (selectedFiles.length === 0) return alert("Select photos first!");
-      const windowType = document.getElementById('uploadWindowType').value;
-      const statusText = document.getElementById('uploadStatusText');
-      const btn = document.getElementById('btnUpload');
-      btn.disabled = true;
-      let successCount = 0;
-      for (let i = 0; i < selectedFiles.length; i++) {
-        statusText.innerText = `Processing sheet ${i + 1} of ${selectedFiles.length} with AI...`;
-        try {
-          const base64Data = await compressImage(selectedFiles[i]);
-          const response = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ image: base64Data, window: windowType, action: "upload" })
-          });
-          const data = await response.json();
-          if (data.status === "success") successCount++;
-        } catch (err) {
-          console.error(err);
-        }
-      }
-      statusText.innerText = `✅ Logged ${successCount} of ${selectedFiles.length} sheets!`;
-      selectedFiles = [];
-      renderThumbnailTray();
-      btn.disabled = false;
-      fetchDatabase();
-    }
-  </script>
 </body>
 </html>
