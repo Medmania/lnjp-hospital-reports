@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- PDF.js for Client-Side Page Extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   
   <style>
     :root{--primary:#0284c7;--primary-hover:#0369a1;--primary-light:#e0f2fe;--bg:#f8fafc;--surface:#ffffff;--surface-border:#e2e8f0;--text-main:#0f172a;--text-muted:#64748b;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:12px;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.07),0 2px 4px -2px rgb(0 0 0 / 0.05)}
@@ -63,7 +65,8 @@
     .preview-tray{display:flex;gap:10px;overflow-x:auto;padding:10px 0}
     .thumb-box{position:relative;width:75px;height:75px;border-radius:8px;overflow:hidden;flex-shrink:0}
     .thumb-box img{width:100%;height:100%;object-fit:cover}
-    .thumb-remove{position:absolute;top:2px;right:2px;background:rgba(239,68,68,.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer}
+    .thumb-box .page-badge{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,0.65);color:white;font-size:10px;padding:1px 4px;border-radius:4px;font-weight:600;}
+    .thumb-remove{position:absolute;top:2px;right:2px;background:rgba(239,68,68,.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;}
     .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:15px}
     .modal.active{display:flex}
     .modal-content{max-width:90vw;max-height:85vh;display:flex;flex-direction:column;align-items:center;position:relative}
@@ -161,12 +164,13 @@
 
       <div id="tab-upload" class="panel">
         <div class="card" id="uploadDeskCard">
-          <div class="card-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Lab Sheets</div>
+          <div class="card-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Lab Sheets / PDFs</div>
           <div class="form-group"><label>Target Window:</label><select id="uploadWindowType"></select></div>
           <div class="upload-zone" onclick="document.getElementById('fileChooser').click()">
-            <i class="fa-solid fa-camera-retro" style="font-size:2.5rem;color:var(--primary);margin-bottom:10px;"></i>
-            <p style="font-weight:600;">Take Photos or Select Gallery (Up to 50)</p>
-            <input type="file" id="fileChooser" accept="image/*" multiple style="display:none;" onchange="handleFileSelection(event)">
+            <i class="fa-solid fa-file-pdf" style="font-size:2.5rem;color:var(--primary);margin-bottom:10px;"></i>
+            <p style="font-weight:600;">Take Photos, Select Gallery, or Upload PDF</p>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Multi-page PDFs up to 60 pages are automatically split and processed page by page</p>
+            <input type="file" id="fileChooser" accept="image/*,application/pdf" multiple style="display:none;" onchange="handleFileSelection(event)">
           </div>
           <div class="preview-tray" id="previewTray"></div>
           <button class="btn-submit" id="btnUpload" onclick="startBatchUpload()"><i class="fa-solid fa-microchip-ai"></i> Upload & Process with AI</button>
@@ -229,15 +233,23 @@
   </div>
 
 <script>
+// Configure pdf.js worker
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
 const SUPABASE_URL="https://leytpfrbrvrsihowgcwg.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxleXRwZnJicnZyc2lob3dnY3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDgyMzAsImV4cCI6MjEwMjI4NDIzMH0.rkR4Ndf7eyhwOKcWdPcfVV4dsaIaNpLvIUpFf63_W9E";
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbw9qjLCPhAXlJwDMas5ydr7_WfryVV78EUxr3mo3pb2-DW6sxRoH95FQUlWqfFyhdS6ng/exec";
 
 const _supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{detectSessionInUrl:true,flowType:'pkce',persistSession:true,autoRefreshToken:true,storage:window.localStorage}});
 
-let selectedReports=new Map(),currentlyFilteredRecords=[],currentUser=null,currentProfile=null,rawRecords=[],selectedFiles=[],activeWindowFilter="ALL",activeDeptFilter="ALL",activeDateFilter="ALL",currentZoom=1,currentRotation=0,departmentList=[],windowList=[];
+let selectedReports=new Map(),currentlyFilteredRecords=[],currentUser=null,currentProfile=null,rawRecords=[],selectedItems=[],activeWindowFilter="ALL",activeDeptFilter="ALL",activeDateFilter="ALL",currentZoom=1,currentRotation=0,departmentList=[],windowList=[];
 const DEFAULT_DEPTS=["Med EM","Sx EM","PICU","CLR","W14","Ortho EM","ICU","Other"];
 const DEFAULT_WINDOWS=["Window 1","Window 2"];
+
+// Helper promise for rate limit pacing
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 window.addEventListener('DOMContentLoaded',async()=>{
   _supabaseClient.auth.onAuthStateChange(async(event,session)=>{
@@ -410,11 +422,117 @@ function zoomImage(factor){currentZoom=Math.max(.5,Math.min(currentZoom+factor,4
 function rotateImage(){currentRotation=(currentRotation+90)%360;updateTransform();}
 function updateTransform(){document.getElementById('modalImage').style.transform=`scale(${currentZoom}) rotate(${currentRotation}deg)`;}
 
-function compressImage(file){return new Promise(resolve=>{const reader=new FileReader();reader.readAsDataURL(file);reader.onload=e=>{const img=new Image();img.src=e.target.result;img.onload=()=>{const canvas=document.createElement('canvas');const MAX_WIDTH=1800;let width=img.width,height=img.height;if(width>MAX_WIDTH){height=Math.round((height*MAX_WIDTH)/width);width=MAX_WIDTH;}canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,width,height);resolve(canvas.toDataURL('image/jpeg',.82));};};});}
-function handleFileSelection(e){selectedFiles=selectedFiles.concat(Array.from(e.target.files)).slice(0,50);renderThumbnailTray();}
-function renderThumbnailTray(){const tray=document.getElementById('previewTray');tray.innerHTML="";selectedFiles.forEach((file,index)=>{const box=document.createElement('div');box.className='thumb-box';box.innerHTML=`<img src="${URL.createObjectURL(file)}"><button class="thumb-remove" onclick="selectedFiles.splice(${index},1);renderThumbnailTray();">×</button>`;tray.appendChild(box);});}
-// Helper for pausing between requests
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// ========== PDF & IMAGE HANDLING ==========
+function compressImage(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload=e=>{
+      const img=new Image();
+      img.src=e.target.result;
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        const MAX_WIDTH=1800;
+        let width=img.width,height=img.height;
+        if(width>MAX_WIDTH){
+          height=Math.round((height*MAX_WIDTH)/width);
+          width=MAX_WIDTH;
+        }
+        canvas.width=width;canvas.height=height;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL('image/jpeg',.82));
+      };
+    };
+  });
+}
+
+// Convert PDF pages to high-resolution JPEG DataURLs
+async function convertPdfToImages(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pageImages = [];
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 2.0 });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+    
+    let finalCanvas = canvas;
+    if (canvas.width > 1800) {
+      finalCanvas = document.createElement('canvas');
+      finalCanvas.width = 1800;
+      finalCanvas.height = Math.round((canvas.height * 1800) / canvas.width);
+      const fCtx = finalCanvas.getContext('2d');
+      fCtx.drawImage(canvas, 0, 0, finalCanvas.width, finalCanvas.height);
+    }
+
+    const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.82);
+    pageImages.push({
+      dataUrl: dataUrl,
+      label: `Page ${pageNum}`
+    });
+  }
+  return pageImages;
+}
+
+async function handleFileSelection(e) {
+  const files = Array.from(e.target.files);
+  const statusText = document.getElementById('uploadStatusText');
+  
+  for (const file of files) {
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
+      if (statusText) statusText.innerText = `Extracting pages from PDF (${file.name})...`;
+      try {
+        const pages = await convertPdfToImages(file);
+        pages.forEach(p => {
+          selectedItems.push({
+            dataUrl: p.dataUrl,
+            label: `${file.name} - ${p.label}`,
+            isPdfPage: true
+          });
+        });
+      } catch (err) {
+        console.error("PDF processing failed:", err);
+        alert(`Failed to parse PDF "${file.name}": ` + err.message);
+      }
+    } else {
+      selectedItems.push({
+        file: file,
+        label: file.name,
+        isPdfPage: false
+      });
+    }
+  }
+
+  // Increased cap to 60 pages/photos
+  selectedItems = selectedItems.slice(0, 60);
+  if (statusText) statusText.innerText = "";
+  renderThumbnailTray();
+  e.target.value = "";
+}
+
+function renderThumbnailTray() {
+  const tray = document.getElementById('previewTray');
+  tray.innerHTML = "";
+  selectedItems.forEach((item, index) => {
+    const box = document.createElement('div');
+    box.className = 'thumb-box';
+    const imgSrc = item.isPdfPage ? item.dataUrl : URL.createObjectURL(item.file);
+    box.innerHTML = `
+      <img src="${imgSrc}">
+      ${item.isPdfPage ? `<span class="page-badge">${item.label.split('-').pop().trim()}</span>` : ''}
+      <button class="thumb-remove" onclick="selectedItems.splice(${index}, 1); renderThumbnailTray();">×</button>
+    `;
+    tray.appendChild(box);
+  });
+}
 
 async function startBatchUpload() {
   if (!selectedItems.length) return alert("Select photos or a PDF first!");
@@ -441,8 +559,9 @@ async function startBatchUpload() {
       const data = await response.json();
       if (data.status === "success") successCount++;
 
-      // 3-second pause between pages to respect the 15 RPM free tier limit
+      // Rate limit safety breather: 3-second pause between requests
       if (i < selectedItems.length - 1) {
+        statusText.innerText = `Sheet ${i + 1} completed. Pacing quota (waiting 3s)...`;
         await sleep(3000);
       }
 
