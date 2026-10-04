@@ -9,6 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Swiper.js for Horizontal Touch-Swipe Gallery -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -40,14 +44,17 @@
     .chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--surface-border);color:var(--text-muted);cursor:pointer;user-select:none}
     .chip.active{background:var(--primary-light);color:var(--primary);border-color:var(--primary)}
     .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-top:15px}
-    .result-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;gap:12px;position:relative;cursor:pointer;transition:transform 0.15s ease, border-color 0.15s ease;}
-    .result-card:hover{border-color:var(--primary);transform:translateY(-2px);}
+    .result-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;gap:12px;position:relative;}
     .badge{font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px}
     .badge-w1{background:#dbeafe;color:#1e40af}.badge-w2{background:#fef3c7;color:#92400e}.badge-other{background:#e2e8f0;color:#475569}
     .btn-submit{width:100%;background:var(--primary);color:#fff;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+    .btn-action{padding:8px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+    .btn-edit{background:#fef3c7;color:#b45309}.btn-del{background:#fee2e2;color:#dc2626}
     .admin-table{width:100%;border-collapse:collapse;margin-top:15px;font-size:13px}
     .admin-table th,.admin-table td{padding:12px;text-align:left;border-bottom:1px solid var(--surface-border)}
     .admin-table th{background:var(--bg);color:var(--text-muted);font-weight:600}
+    .btn-table{padding:6px 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px}
+    .btn-approve-viewer{background:#e0f2fe;color:#0284c7}.btn-approve-editor{background:#dcfce7;color:#16a34a}.btn-reject{background:#fee2e2;color:#dc2626}
     .upload-zone-container{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;}
     .upload-zone{border:2px dashed var(--primary);background:var(--bg);border-radius:var(--radius);padding:24px 15px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;}
     .preview-tray{display:flex;gap:10px;overflow-x:auto;padding:10px 0}
@@ -55,34 +62,27 @@
     .thumb-box img{width:100%;height:100%;object-fit:cover}
     .thumb-box .page-badge{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,0.7);color:white;font-size:10px;padding:1px 4px;border-radius:4px;font-weight:600;}
     .thumb-remove{position:absolute;top:2px;right:2px;background:rgba(239,68,68,.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;}
-    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:10px}
+    
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:100;align-items:center;justify-content:center;padding:0}
     .modal.active{display:flex}
-    
-    /* Scrollable Feed Modal (Uncropped Images) */
-    .feed-modal-content{width:100%;max-width:650px;height:95vh;background:var(--bg);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;position:relative;}
-    .feed-header{background:var(--surface);padding:14px 16px;border-bottom:1px solid var(--surface-border);display:flex;justify-content:space-between;align-items:center;}
-    .feed-scroll-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:20px;}
-    .feed-image-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
-    
-    /* CRITICAL FIX: Ensure image displays full width and uncropped height */
-    .feed-image-card img{width:100%;height:auto;max-height:none;object-fit:contain;display:block;cursor:zoom-in;}
-    
-    .feed-image-footer{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--surface);border-top:1px solid var(--surface-border);}
-    .feed-checkbox{width:20px;height:20px;cursor:pointer;}
-    .feed-floating-bar{background:var(--surface);border-top:1px solid var(--surface-border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
 
-    /* Full-Screen Zoom Lightbox Modal */
-    .zoom-modal-content{max-width:98vw;max-height:95vh;display:flex;flex-direction:column;align-items:center;position:relative;}
-    .zoom-img{max-width:100%;max-height:85vh;object-fit:contain;border-radius:8px;}
+    /* FULLSCREEN HORIZONTAL SWIPE GALLERY MODAL */
+    .gallery-modal-content{width:100vw;height:100vh;display:flex;flex-direction:column;justify-content:space-between;position:relative;background:#000;}
+    .gallery-header{padding:12px 16px;background:rgba(0,0,0,0.85);color:#fff;display:flex;justify-content:space-between;align-items:center;z-index:10;}
+    .gallery-footer{padding:12px 16px;background:rgba(0,0,0,0.85);color:#fff;display:flex;justify-content:space-between;align-items:center;z-index:10;}
+    
+    .swiper{width:100%;height:calc(100vh - 120px);}
+    .swiper-slide{display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    .swiper-slide img{max-width:100%;max-height:100%;object-fit:contain;}
 
+    .btn-bulk-share{background:#25D366;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+    
     /* Camera Overlay */
     .camera-box{width:100%;max-width:500px;background:#000;border-radius:var(--radius);overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;}
     .camera-video{width:100%;height:350px;object-fit:cover;}
     .camera-actions{padding:15px;display:flex;gap:15px;justify-content:center;width:100%;background:rgba(0,0,0,0.8);}
     .btn-snap{width:60px;height:60px;border-radius:50%;background:#fff;border:4px solid var(--primary);cursor:pointer;}
-    .tool-btn{background:none;border:none;color:var(--text-main);font-size:18px;cursor:pointer;}
-    .btn-bulk{border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;}
-    .btn-bulk-share{background:#dcfce7;color:#15803d;}
+    .tool-btn{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;}
   </style>
 </head>
 <body>
@@ -202,35 +202,46 @@
     </div>
   </div>
 
-  <!-- WhatsApp-Style Scrollable Feed Modal -->
-  <div class="modal" id="feedModal">
-    <div class="feed-modal-content">
-      <div class="feed-header">
+  <!-- EDIT BATCH METADATA MODAL -->
+  <div class="modal" id="editModal">
+    <div class="card" style="width:90%;max-width:450px;position:relative;">
+      <button class="tool-btn" style="position:absolute;top:15px;right:15px;color:var(--text-main);" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+      <h3 style="color:var(--primary);margin-bottom:15px;">✏️ Update Batch Title</h3>
+      <input type="hidden" id="editRowIndex">
+      <div class="form-group"><label>Title / Range:</label><input type="text" id="editDescription"></div>
+      <button class="btn-submit" id="btnSaveEdit" onclick="saveRecordCorrection()"><i class="fa-solid fa-check"></i> Save Title</button>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN HORIZONTAL SWIPE GALLERY MODAL -->
+  <div class="modal" id="galleryModal">
+    <div class="gallery-modal-content">
+      <div class="gallery-header">
         <div>
-          <h3 id="feedModalTitle" style="color:var(--primary);font-size:1rem;">Batch Feed</h3>
-          <span id="feedModalSub" style="font-size:12px;color:var(--text-muted);">0 pages</span>
+          <h3 id="galleryTitle" style="font-size:1rem;color:#38bdf8;">Batch Name</h3>
+          <span id="gallerySub" style="font-size:12px;color:#94a3b8;">Page 1 of 1</span>
         </div>
-        <button class="tool-btn" onclick="closeFeedModal()"><i class="fa-solid fa-xmark"></i></button>
+        <button class="tool-btn" onclick="closeGalleryModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="feed-scroll-body" id="feedScrollContainer"></div>
+      <!-- Swiper Slider View -->
+      <div class="swiper mySwiper">
+        <div class="swiper-wrapper" id="swiperWrapper"></div>
+        <div class="swiper-button-next" style="color:#fff;"></div>
+        <div class="swiper-button-prev" style="color:#fff;"></div>
+      </div>
 
-      <div class="feed-floating-bar">
-        <span id="feedSelectedCount" style="font-size:13px;font-weight:600;color:var(--primary);">0 selected</span>
-        <button class="btn-bulk btn-bulk-share" onclick="shareSelectedFeedPages()"><i class="fa-brands fa-whatsapp"></i> Share Pages to WhatsApp</button>
+      <div class="gallery-footer">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
+          <input type="checkbox" id="gallerySelectCheckbox" style="width:20px;height:20px;" onchange="toggleCurrentSlideSelection(this.checked)">
+          Select this page
+        </label>
+        <button class="btn-bulk-share" onclick="shareSelectedFeedPages()"><i class="fa-brands fa-whatsapp"></i> Share (<span id="gallerySelectedCount">0</span>)</button>
       </div>
     </div>
   </div>
 
-  <!-- Full-Screen Tap-to-Zoom Lightbox Modal -->
-  <div class="modal" id="zoomModal">
-    <div class="zoom-modal-content">
-      <button class="tool-btn" style="position:absolute;top:-40px;right:0;color:#fff;font-size:24px;" onclick="closeZoomModal()"><i class="fa-solid fa-xmark"></i></button>
-      <img id="zoomModalImg" class="zoom-img">
-    </div>
-  </div>
-
-  <!-- Fullscreen HD Camera View Modal -->
+  <!-- Camera Modal -->
   <div class="modal" id="cameraModal">
     <div class="camera-box">
       <video id="cameraFeed" class="camera-video" autoplay playsinline></video>
@@ -248,7 +259,7 @@ const SCRIPT_URL="https://script.google.com/macros/s/AKfycbySR6K-0e71UhZGJ3ldUIh
 
 const _supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{detectSessionInUrl:true,flowType:'pkce',persistSession:true,autoRefreshToken:true,storage:window.localStorage}});
 
-let currentUser=null,currentProfile=null,rawRecords=[],capturedImages=[],activeWindowFilter="ALL",activeDateFilter="ALL",mediaStream=null,activeFeedBatch=null,selectedFeedPages=new Set();
+let currentUser=null,currentProfile=null,rawRecords=[],capturedImages=[],activeWindowFilter="ALL",activeDateFilter="ALL",mediaStream=null,activeFeedBatch=null,selectedFeedPages=new Map(),swiperInstance=null;
 const DEFAULT_WINDOWS=["Window 1","Window 2"];
 
 window.addEventListener('DOMContentLoaded',async()=>{
@@ -315,22 +326,38 @@ async function logout(){
 
 function setupMainApp(){
   showView('view-main');
-  
   const navInfo = document.getElementById('navUserInfo');
   const btnLogout = document.getElementById('btnLogout');
+  const adminTab = document.getElementById('tabBtnAdmin');
   
   if (navInfo) {
     navInfo.style.display = 'inline-flex';
     navInfo.innerText = `${currentProfile?.full_name || 'Staff'} (${String(currentProfile?.role || 'user').toUpperCase()})`;
   }
-  if (btnLogout) {
-    btnLogout.style.display = 'inline-flex';
+  if (btnLogout) btnLogout.style.display = 'inline-flex';
+  
+  if (currentProfile?.role === 'admin') {
+    if (adminTab) adminTab.style.display = 'flex';
+    loadAdminUsers();
   }
 
   renderWindowChips();
   renderUploadWindowSelect();
   fetchDatabase();
 }
+
+async function loadAdminUsers(){
+  const tbody=document.getElementById('adminUserTableBody');
+  const{data:users,error}=await _supabaseClient.from('profiles').select('*').order('created_at',{ascending:false});
+  if(error||!users){tbody.innerHTML=`<tr><td colspan="4">Error loading users.</td></tr>`;return;}
+  tbody.innerHTML="";
+  users.forEach(u=>{
+    const isSelf=u.id===currentUser.id;
+    tbody.innerHTML+=`<tr><td><strong>${u.full_name||'No Name'}</strong><br><span style="color:var(--text-muted);font-size:11px;">${u.email}</span></td><td>${u.designation}<br><span style="color:var(--text-muted);font-size:11px;">${u.department}</span></td><td><span class="badge ${u.status==='approved'?'badge-w1':'badge-w2'}">${u.status} (${u.role})</span></td><td>${isSelf?'<span style="color:var(--text-muted);font-size:11px;">(You)</span>':`<button class="btn-table btn-approve-viewer" onclick="updateUserRole('${u.id}','approved','viewer')">Viewer</button><button class="btn-table btn-approve-editor" onclick="updateUserRole('${u.id}','approved','editor')">Editor</button><button class="btn-table btn-reject" onclick="updateUserRole('${u.id}','rejected','viewer')">Reject</button>`}</td></tr>`;
+  });
+}
+
+async function updateUserRole(userId,status,role){const{error}=await _supabaseClient.from('profiles').update({status,role}).eq('id',userId);if(error)alert("Action failed: "+error.message);else loadAdminUsers();}
 
 function renderWindowChips(){
   const c=document.getElementById('windowChips');
@@ -349,6 +376,7 @@ function switchTab(tab){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   if(tab==='search'){document.getElementById('tabBtnSearch').classList.add('active');document.getElementById('tab-search').classList.add('active');}
   else if(tab==='upload'){document.getElementById('tabBtnUpload').classList.add('active');document.getElementById('tab-upload').classList.add('active');}
+  else if(tab==='admin'){document.getElementById('tabBtnAdmin').classList.add('active');document.getElementById('tab-admin').classList.add('active');}
 }
 
 function toggleTheme(){
@@ -390,117 +418,197 @@ function applyFilters(){
   grid.innerHTML="";
 
   if(!filtered.length){
-    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No batches found. Upload one from the Upload Desk!</div>`;
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No batches found.</div>`;
     return;
   }
+
+  const isAdmin = currentProfile?.role === 'admin';
+  const isEditorOrAdmin = isAdmin || currentProfile?.role === 'editor';
 
   filtered.forEach(r=>{
     let badgeClass=r.windowType==='Window 1'?'badge-w1':'badge-w2';
     const formattedDate = formatDateDisplay(r.date);
     
     let totalPages = 1;
-    if (Array.isArray(r.imageUrls)) {
-      totalPages = r.imageUrls.length;
-    } else if (r.pageCount) {
-      totalPages = r.pageCount;
-    }
+    if (Array.isArray(r.imageUrls)) totalPages = r.imageUrls.length;
+    else if (r.pageCount) totalPages = r.pageCount;
 
     const card=document.createElement('div');
     card.className='result-card';
-    card.onclick=()=>openFeedModal(r);
     
     card.innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <strong style="font-size:1.05rem;color:var(--primary);">${r.description||'Routine Log'}</strong>
-        <span class="badge ${badgeClass}">${r.windowType||'—'}</span>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <strong style="font-size:1.05rem;color:var(--primary);">${r.description||'Routine Log'}</strong>
+          <span class="badge ${badgeClass}">${r.windowType||'—'}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">📅 Date: <span style="color:var(--text-main);font-weight:600;">${formattedDate}</span></div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">🖼 Pages: <span style="color:var(--text-main);font-weight:600;">${totalPages} page(s)</span></div>
       </div>
-      <div style="font-size:13px;color:var(--text-muted);">📅 Date: <span style="color:var(--text-main);font-weight:600;">${formattedDate}</span></div>
-      <div style="font-size:13px;color:var(--text-muted);">🖼 Pages: <span style="color:var(--text-main);font-weight:600;">${totalPages} page(s)</span></div>
-      <button class="btn-submit" style="padding:8px;font-size:13px;margin-top:6px;"><i class="fa-solid fa-layer-group"></i> Tap to View All Pages</button>
+      
+      <button class="btn-submit" style="padding:8px;font-size:13px;" onclick="openGalleryModalByRow(${r.rowIndex})"><i class="fa-solid fa-expand"></i> Open Swipe Gallery</button>
+      
+      <!-- ADMIN & EDIT CONTROLS RESTORED HERE -->
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        ${isEditorOrAdmin ? `<button class="btn-action btn-edit" style="flex:1;" onclick="openEditModal(${r.rowIndex})"><i class="fa-solid fa-pen"></i> Edit Title</button>` : ''}
+        ${isAdmin ? `<button class="btn-action btn-del" onclick="deleteBatchRecord(${r.rowIndex}, '${String(r.description||'Batch').replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i> Delete</button>` : ''}
+      </div>
     `;
     grid.appendChild(card);
   });
 }
 
+function openGalleryModalByRow(rowIndex){
+  const batch = rawRecords.find(r => r.rowIndex === rowIndex);
+  if (batch) openGalleryModal(batch);
+}
+
 // ==========================================
-// SCROLLABLE WHATSAPP-STYLE FEED MODAL
+// RESTORED ADMIN & EDIT HANDLERS
 // ==========================================
-function openFeedModal(batch){
-  activeFeedBatch=batch;
+function openEditModal(rowIndex){
+  const record = rawRecords.find(r => r.rowIndex === rowIndex);
+  if (!record) return;
+  document.getElementById('editRowIndex').value = rowIndex;
+  document.getElementById('editDescription').value = record.description || '';
+  document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal(){
+  document.getElementById('editModal').classList.remove('active');
+}
+
+async function saveRecordCorrection(){
+  const rowIndex = parseInt(document.getElementById('editRowIndex').value);
+  const description = document.getElementById('editDescription').value.trim();
+  const btn = document.getElementById('btnSaveEdit');
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+  
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "edit", rowIndex, description })
+    });
+    const res = await response.json();
+    if (res.status === 'success') {
+      closeEditModal();
+      await fetchDatabase(true);
+    } else alert("Update failed: " + res.message);
+  } catch (err) {
+    alert("Error saving: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-check"></i> Save Title`;
+  }
+}
+
+async function deleteBatchRecord(rowIndex, desc){
+  if (!confirm(`Are you sure you want to permanently delete batch "${desc}"?`)) return;
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "delete", rowIndex })
+    });
+    const res = await response.json();
+    if (res.status === 'success') {
+      await fetchDatabase(true);
+    } else alert("Delete failed: " + res.message);
+  } catch(err) {
+    alert("Error deleting batch: " + err.message);
+  }
+}
+
+// ==========================================
+// FULLSCREEN HORIZONTAL SWIPE GALLERY MODAL
+// ==========================================
+function openGalleryModal(batch){
+  activeFeedBatch = batch;
   selectedFeedPages.clear();
   
   let imageList = [];
-  if (Array.isArray(batch.imageUrls)) {
-    imageList = batch.imageUrls;
-  } else if (typeof batch.imageUrls === 'string') {
-    try {
-      imageList = JSON.parse(batch.imageUrls);
-    } catch(e) {
-      imageList = [batch.imageUrls];
-    }
+  if (Array.isArray(batch.imageUrls)) imageList = batch.imageUrls;
+  else if (typeof batch.imageUrls === 'string') {
+    try { imageList = JSON.parse(batch.imageUrls); } catch(e) { imageList = [batch.imageUrls]; }
   } else if (batch.pdfUrl || batch.imgUrl) {
     imageList = [batch.pdfUrl || batch.imgUrl];
   }
 
-  const formattedDate = formatDateDisplay(batch.date);
-  document.getElementById('feedModalTitle').innerText = batch.description || "Batch Feed";
-  document.getElementById('feedModalSub').innerText = `${formattedDate} • ${imageList.length} page(s)`;
+  document.getElementById('galleryTitle').innerText = batch.description || "Batch Gallery";
   
-  const container = document.getElementById('feedScrollContainer');
-  container.innerHTML = "";
+  const wrapper = document.getElementById('swiperWrapper');
+  wrapper.innerHTML = "";
 
-  imageList.forEach((url, idx)=>{
+  imageList.forEach((url, idx) => {
     const directUrl = getDirectImageUrl(url);
-    const card = document.createElement('div');
-    card.className = 'feed-image-card';
-    card.innerHTML = `
-      <img src="${directUrl}" loading="lazy" onclick="openZoomModal('${directUrl}')" title="Tap to full screen zoom">
-      <div class="feed-image-footer">
-        <span style="font-size:12px;font-weight:600;color:var(--primary);">📄 Page ${idx + 1} of ${imageList.length} (Tap image to zoom)</span>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;">
-          <input type="checkbox" class="feed-checkbox" onchange="toggleFeedPage('${directUrl}', this.checked)"> Select
-        </label>
-      </div>
-    `;
-    container.appendChild(card);
+    const slide = document.createElement('div');
+    slide.className = 'swiper-slide';
+    slide.dataset.url = directUrl;
+    slide.dataset.page = idx + 1;
+    slide.innerHTML = `<img src="${directUrl}" loading="lazy">`;
+    wrapper.appendChild(slide);
   });
 
-  updateFeedSelectedCount();
-  document.getElementById('feedModal').classList.add('active');
+  document.getElementById('galleryModal').classList.add('active');
+
+  if (swiperInstance) swiperInstance.destroy(true, true);
+
+  swiperInstance = new Swiper('.mySwiper', {
+    navigation: {
+      nextEl: '.swiper-button-next',
+      prevEl: '.swiper-button-prev',
+    },
+    on: {
+      init: function() { updateGallerySlideInfo(this, imageList.length); },
+      slideChange: function() { updateGallerySlideInfo(this, imageList.length); }
+    }
+  });
+
+  updateSelectedCountDisplay();
 }
 
-function closeFeedModal(){
-  document.getElementById('feedModal').classList.remove('active');
+function updateGallerySlideInfo(swiper, total) {
+  const currentIndex = swiper.activeIndex;
+  document.getElementById('gallerySub').innerText = `Page ${currentIndex + 1} of ${total}`;
+  
+  const currentSlide = swiper.slides[currentIndex];
+  const currentUrl = currentSlide ? currentSlide.dataset.url : "";
+  
+  const checkbox = document.getElementById('gallerySelectCheckbox');
+  checkbox.checked = selectedFeedPages.has(currentUrl);
 }
 
-function openZoomModal(url){
-  document.getElementById('zoomModalImg').src = url;
-  document.getElementById('zoomModal').classList.add('active');
+function toggleCurrentSlideSelection(isChecked) {
+  if (!swiperInstance) return;
+  const activeSlide = swiperInstance.slides[swiperInstance.activeIndex];
+  const url = activeSlide ? activeSlide.dataset.url : "";
+  const pageNum = activeSlide ? activeSlide.dataset.page : "1";
+
+  if (isChecked && url) {
+    selectedFeedPages.set(url, pageNum);
+  } else {
+    selectedFeedPages.delete(url);
+  }
+  updateSelectedCountDisplay();
 }
 
-function closeZoomModal(){
-  document.getElementById('zoomModal').classList.remove('active');
+function updateSelectedCountDisplay() {
+  document.getElementById('gallerySelectedCount').innerText = selectedFeedPages.size;
 }
 
-function toggleFeedPage(url, isChecked){
-  if(isChecked) selectedFeedPages.add(url);
-  else selectedFeedPages.delete(url);
-  updateFeedSelectedCount();
-}
-
-function updateFeedSelectedCount(){
-  document.getElementById('feedSelectedCount').innerText=`${selectedFeedPages.size} page(s) selected`;
+function closeGalleryModal() {
+  document.getElementById('galleryModal').classList.remove('active');
 }
 
 function shareSelectedFeedPages(){
   if(!selectedFeedPages.size) return alert("Select at least one page to share!");
-  let text=`📋 *LNJP Lab Batch: ${activeFeedBatch.description}*\n📅 *Date:* ${formatDateDisplay(activeFeedBatch.date)}\n\n*Selected Pages:*\n`;
-  let i=1;
-  selectedFeedPages.forEach(url=>{
-    text+=`📄 Page ${i}: ${url}\n`;
-    i++;
+  let text = `📋 *LNJP Lab Batch: ${activeFeedBatch.description}*\n📅 *Date:* ${formatDateDisplay(activeFeedBatch.date)}\n\n*Selected Pages:*\n`;
+  
+  selectedFeedPages.forEach((pageNum, url) => {
+    text += `📄 Page ${pageNum}: ${url}\n`;
   });
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`,'_blank');
+
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
 }
 
 // ==========================================
