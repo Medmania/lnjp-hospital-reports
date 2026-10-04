@@ -42,23 +42,12 @@
     .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-top:15px}
     .result-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;gap:12px;position:relative;cursor:pointer;transition:transform 0.15s ease, border-color 0.15s ease;}
     .result-card:hover{border-color:var(--primary);transform:translateY(-2px);}
-    .result-card.selected{border:2px solid var(--primary);background:var(--primary-light)}
-    .card-checkbox{position:absolute;top:12px;left:12px;width:18px;height:18px;cursor:pointer;z-index:5}
     .badge{font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px}
     .badge-w1{background:#dbeafe;color:#1e40af}.badge-w2{background:#fef3c7;color:#92400e}.badge-other{background:#e2e8f0;color:#475569}
     .btn-submit{width:100%;background:var(--primary);color:#fff;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
-    .btn-action{flex:1;padding:8px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
-    .btn-view{background:var(--primary-light);color:var(--primary)}.btn-edit{background:#fef3c7;color:#b45309}.btn-del{background:#fee2e2;color:#dc2626}.btn-wa{background:#dcfce7;color:#15803d}
-    .bulk-bar{position:sticky;bottom:20px;left:0;right:0;background:var(--surface);border:1px solid var(--primary);color:var(--text-main);padding:12px 20px;border-radius:12px;display:none;justify-content:space-between;align-items:center;box-shadow:0 8px 25px rgba(0,0,0,.2);z-index:40;margin-top:20px}
-    .bulk-bar.active{display:flex}
-    .bulk-actions-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .btn-bulk{border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
-    .btn-bulk-clear{background:var(--bg);color:var(--text-muted);border:1px solid var(--surface-border)}.btn-bulk-share{background:#dcfce7;color:#15803d}.btn-bulk-delete{background:#fee2e2;color:#dc2626}
     .admin-table{width:100%;border-collapse:collapse;margin-top:15px;font-size:13px}
     .admin-table th,.admin-table td{padding:12px;text-align:left;border-bottom:1px solid var(--surface-border)}
     .admin-table th{background:var(--bg);color:var(--text-muted);font-weight:600}
-    .btn-table{padding:6px 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px}
-    .btn-approve-viewer{background:#e0f2fe;color:#0284c7}.btn-approve-editor{background:#dcfce7;color:#16a34a}.btn-reject{background:#fee2e2;color:#dc2626}.btn-delete-dept{background:#fee2e2;color:#dc2626}
     .upload-zone-container{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;}
     .upload-zone{border:2px dashed var(--primary);background:var(--bg);border-radius:var(--radius);padding:24px 15px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;}
     .preview-tray{display:flex;gap:10px;overflow-x:auto;padding:10px 0}
@@ -68,12 +57,11 @@
     .thumb-remove{position:absolute;top:2px;right:2px;background:rgba(239,68,68,.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;}
     .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:15px}
     .modal.active{display:flex}
-    .modal-content{max-width:90vw;max-height:85vh;display:flex;flex-direction:column;align-items:center;position:relative}
     .modal-close{position:absolute;top:-35px;right:0;color:#fff;font-size:24px;background:none;border:none;cursor:pointer}
     .dept-manage-row{display:flex;gap:8px;margin-bottom:12px}.dept-manage-row input{flex:1}
     .dept-list-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px}
     
-    /* WhatsApp-Style Feed Modal */
+    /* Scrollable Feed Modal */
     .feed-modal-content{width:100%;max-width:600px;height:90vh;background:var(--bg);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;position:relative;}
     .feed-header{background:var(--surface);padding:14px 16px;border-bottom:1px solid var(--surface-border);display:flex;justify-content:space-between;align-items:center;}
     .feed-scroll-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:16px;}
@@ -88,6 +76,9 @@
     .camera-video{width:100%;height:350px;object-fit:cover;}
     .camera-actions{padding:15px;display:flex;gap:15px;justify-content:center;width:100%;background:rgba(0,0,0,0.8);}
     .btn-snap{width:60px;height:60px;border-radius:50%;background:#fff;border:4px solid var(--primary);cursor:pointer;}
+    .tool-btn{background:none;border:none;color:var(--text-main);font-size:18px;cursor:pointer;}
+    .btn-bulk{border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+    .btn-bulk-share{background:#dcfce7;color:#15803d;}
   </style>
 </head>
 <body>
@@ -215,7 +206,7 @@
           <h3 id="feedModalTitle" style="color:var(--primary);font-size:1rem;">Batch Feed</h3>
           <span id="feedModalSub" style="font-size:12px;color:var(--text-muted);">0 pages</span>
         </div>
-        <button class="tool-btn" style="color:var(--text-main);" onclick="closeFeedModal()"><i class="fa-solid fa-xmark" style="font-size:20px;"></i></button>
+        <button class="tool-btn" onclick="closeFeedModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="feed-scroll-body" id="feedScrollContainer"></div>
@@ -257,11 +248,31 @@ window.addEventListener('DOMContentLoaded',async()=>{
   await checkUserSession();
 });
 
-function getDirectImageUrl(url){if(!url)return'';const match=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/)||String(url).match(/id=([a-zA-Z0-9_-]+)/);return(match&&match[1])?`https://lh3.googleusercontent.com/d/${match[1]}`:url;}
+function getDirectImageUrl(url){
+  if(!url) return '';
+  const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url).match(/id=([a-zA-Z0-9_-]+)/);
+  return (match && match[1]) ? `https://lh3.googleusercontent.com/d/${match[1]}` : url;
+}
+
+function formatDateDisplay(rawDate) {
+  if (!rawDate) return 'Today';
+  try {
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) return String(rawDate).split('T')[0];
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  } catch (e) {
+    return String(rawDate).split('T')[0];
+  }
+}
 
 async function checkUserSession(){
   try{
-    if(window.location.hash.includes('access_token')||window.location.search.includes('code=')){setTimeout(()=>{window.history.replaceState({},document.title,window.location.origin+window.location.pathname);},800);}
+    if(window.location.hash.includes('access_token')||window.location.search.includes('code=')){
+      setTimeout(()=>{window.history.replaceState({},document.title,window.location.origin+window.location.pathname);},800);
+    }
     const{data:{session},error:sessionError}=await _supabaseClient.auth.getSession();
     if(sessionError||!session){showView('view-login');return;}
     currentUser=session.user;
@@ -273,17 +284,38 @@ async function checkUserSession(){
   }catch(e){showView('view-login');}
 }
 
-function showView(viewId){['view-login','view-onboarding','view-pending','view-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=(id===viewId)?'block':'none';});}
+function showView(viewId){
+  ['view-login','view-onboarding','view-pending','view-main'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=(id===viewId)?'block':'none';
+  });
+}
 
 async function loginWithGoogle(){
   const redirectTo=window.location.origin+window.location.pathname;
   await _supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{access_type:'offline',prompt:'select_account'}}});
 }
 
-async function logout(){await _supabaseClient.auth.signOut();window.location.href=window.location.origin+window.location.pathname;}
+async function logout(){
+  await _supabaseClient.auth.signOut();
+  window.location.href=window.location.origin+window.location.pathname;
+}
 
 function setupMainApp(){
   showView('view-main');
+  
+  // Display Logged In User Info & Show Logout Button
+  const navInfo = document.getElementById('navUserInfo');
+  const btnLogout = document.getElementById('btnLogout');
+  
+  if (navInfo) {
+    navInfo.style.display = 'inline-flex';
+    navInfo.innerText = `${currentProfile?.full_name || 'Staff'} (${String(currentProfile?.role || 'user').toUpperCase()})`;
+  }
+  if (btnLogout) {
+    btnLogout.style.display = 'inline-flex';
+  }
+
   renderWindowChips();
   renderUploadWindowSelect();
   fetchDatabase();
@@ -336,7 +368,10 @@ function applyFilters(){
     const descStr=String(r.description||'').toLowerCase();
     const matchQuery=!query||descStr.includes(query);
     const matchWindow=(activeWindowFilter==='ALL')||(String(r.windowType||'')===activeWindowFilter);
-    let matchDate=true;if(activeDateFilter!=='ALL'&&r.date){matchDate=(r.date===activeDateFilter);}
+    let matchDate=true;
+    if(activeDateFilter!=='ALL' && r.date){
+      matchDate=(formatDateDisplay(r.date)===activeDateFilter);
+    }
     return matchQuery&&matchWindow&&matchDate;
   });
 
@@ -350,6 +385,16 @@ function applyFilters(){
 
   filtered.forEach(r=>{
     let badgeClass=r.windowType==='Window 1'?'badge-w1':'badge-w2';
+    const formattedDate = formatDateDisplay(r.date);
+    
+    // Safely extract total image count
+    let totalPages = 1;
+    if (Array.isArray(r.imageUrls)) {
+      totalPages = r.imageUrls.length;
+    } else if (r.pageCount) {
+      totalPages = r.pageCount;
+    }
+
     const card=document.createElement('div');
     card.className='result-card';
     card.onclick=()=>openFeedModal(r);
@@ -359,8 +404,8 @@ function applyFilters(){
         <strong style="font-size:1.05rem;color:var(--primary);">${r.description||'Routine Log'}</strong>
         <span class="badge ${badgeClass}">${r.windowType||'—'}</span>
       </div>
-      <div style="font-size:13px;color:var(--text-muted);">📅 Date: <span style="color:var(--text-main);font-weight:600;">${r.date}</span></div>
-      <div style="font-size:13px;color:var(--text-muted);">🖼️ Pages: <span style="color:var(--text-main);font-weight:600;">${r.imageUrls ? r.imageUrls.length : r.pageCount} page(s)</span></div>
+      <div style="font-size:13px;color:var(--text-muted);">📅 Date: <span style="color:var(--text-main);font-weight:600;">${formattedDate}</span></div>
+      <div style="font-size:13px;color:var(--text-muted);">🖼️️ Pages: <span style="color:var(--text-main);font-weight:600;">${totalPages} page(s)</span></div>
       <button class="btn-submit" style="padding:8px;font-size:13px;margin-top:6px;"><i class="fa-solid fa-layer-group"></i> Tap to View All Pages</button>
     `;
     grid.appendChild(card);
@@ -374,20 +419,35 @@ function openFeedModal(batch){
   activeFeedBatch=batch;
   selectedFeedPages.clear();
   
-  document.getElementById('feedModalTitle').innerText=batch.description||"Batch Feed";
-  document.getElementById('feedModalSub').innerText=`${batch.date} • ${batch.imageUrls.length} pages`;
-  
-  const container=document.getElementById('feedScrollContainer');
-  container.innerHTML="";
+  // Safely extract array of image URLs
+  let imageList = [];
+  if (Array.isArray(batch.imageUrls)) {
+    imageList = batch.imageUrls;
+  } else if (typeof batch.imageUrls === 'string') {
+    try {
+      imageList = JSON.parse(batch.imageUrls);
+    } catch(e) {
+      imageList = [batch.imageUrls];
+    }
+  } else if (batch.pdfUrl || batch.imgUrl) {
+    imageList = [batch.pdfUrl || batch.imgUrl];
+  }
 
-  batch.imageUrls.forEach((url, idx)=>{
-    const directUrl=getDirectImageUrl(url);
-    const card=document.createElement('div');
-    card.className='feed-image-card';
-    card.innerHTML=`
-      <img src="${directUrl}" loading="lazy">
+  const formattedDate = formatDateDisplay(batch.date);
+  document.getElementById('feedModalTitle').innerText = batch.description || "Batch Feed";
+  document.getElementById('feedModalSub').innerText = `${formattedDate} • ${imageList.length} page(s)`;
+  
+  const container = document.getElementById('feedScrollContainer');
+  container.innerHTML = "";
+
+  imageList.forEach((url, idx)=>{
+    const directUrl = getDirectImageUrl(url);
+    const card = document.createElement('div');
+    card.className = 'feed-image-card';
+    card.innerHTML = `
+      <img src="${directUrl}" loading="lazy" onerror="this.src='https://via.placeholder.com/600x800?text=Image+Load+Error';">
       <div class="feed-image-footer">
-        <span style="font-size:12px;font-weight:600;">Page ${idx + 1}</span>
+        <span style="font-size:12px;font-weight:600;">Page ${idx + 1} of ${imageList.length}</span>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;">
           <input type="checkbox" class="feed-checkbox" onchange="toggleFeedPage('${directUrl}', this.checked)"> Select for WhatsApp
         </label>
@@ -416,7 +476,7 @@ function updateFeedSelectedCount(){
 
 function shareSelectedFeedPages(){
   if(!selectedFeedPages.size) return alert("Select at least one page to share!");
-  let text=`📋 *LNJP Lab Batch: ${activeFeedBatch.description}*\n📅 *Date:* ${activeFeedBatch.date}\n\n*Selected Pages:*\n`;
+  let text=`📋 *LNJP Lab Batch: ${activeFeedBatch.description}*\n📅 *Date:* ${formatDateDisplay(activeFeedBatch.date)}\n\n*Selected Pages:*\n`;
   let i=1;
   selectedFeedPages.forEach(url=>{
     text+=`📄 Page ${i}: ${url}\n`;
