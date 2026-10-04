@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF for Client-Side Instant PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <style>
     :root{--primary:#0284c7;--primary-hover:#0369a1;--primary-light:#e0f2fe;--bg:#f8fafc;--surface:#ffffff;--surface-border:#e2e8f0;--text-main:#0f172a;--text-muted:#64748b;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:12px;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.07),0 2px 4px -2px rgb(0 0 0 / 0.05)}
@@ -40,12 +42,12 @@
     .chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg);border:1px solid var(--surface-border);color:var(--text-muted);cursor:pointer;user-select:none}
     .chip.active{background:var(--primary-light);color:var(--primary);border-color:var(--primary)}
     .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-top:15px}
-    .result-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;gap:12px;position:relative;cursor:pointer;transition:transform 0.15s ease, border-color 0.15s ease;}
-    .result-card:hover{border-color:var(--primary);transform:translateY(-2px);}
+    .result-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;gap:10px;position:relative}
     .result-card.selected{border:2px solid var(--primary);background:var(--primary-light)}
     .card-checkbox{position:absolute;top:12px;left:12px;width:18px;height:18px;cursor:pointer;z-index:5}
     .badge{font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px}
     .badge-w1{background:#dbeafe;color:#1e40af}.badge-w2{background:#fef3c7;color:#92400e}.badge-other{background:#e2e8f0;color:#475569}
+    .img-preview{width:100%;height:140px;object-fit:cover;border-radius:8px;border:1px solid var(--surface-border);cursor:pointer;background:var(--bg)}
     .btn-submit{width:100%;background:var(--primary);color:#fff;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
     .btn-action{flex:1;padding:8px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
     .btn-view{background:var(--primary-light);color:var(--primary)}.btn-edit{background:#fef3c7;color:#b45309}.btn-del{background:#fee2e2;color:#dc2626}.btn-wa{background:#dcfce7;color:#15803d}
@@ -69,19 +71,610 @@
     .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:15px}
     .modal.active{display:flex}
     .modal-content{max-width:90vw;max-height:85vh;display:flex;flex-direction:column;align-items:center;position:relative}
+    .modal-img{max-width:100%;max-height:75vh;border-radius:8px}
+    .modal-toolbar{display:flex;gap:10px;margin-top:12px;background:rgba(255,255,255,.2);padding:8px 16px;border-radius:30px}
+    .tool-btn{background:none;border:none;color:#fff;font-size:16px;cursor:pointer}
     .modal-close{position:absolute;top:-35px;right:0;color:#fff;font-size:24px;background:none;border:none;cursor:pointer}
     .dept-manage-row{display:flex;gap:8px;margin-bottom:12px}.dept-manage-row input{flex:1}
     .dept-list-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px}
     
-    /* WhatsApp-Style Feed Modal */
-    .feed-modal-content{width:100%;max-width:600px;height:90vh;background:var(--bg);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;position:relative;}
-    .feed-header{background:var(--surface);padding:14px 16px;border-bottom:1px solid var(--surface-border);display:flex;justify-content:space-between;align-items:center;}
-    .feed-scroll-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:16px;}
-    .feed-image-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);overflow:hidden;position:relative;}
-    .feed-image-card img{width:100%;height:auto;display:block;}
-    .feed-image-footer{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--surface);}
-    .feed-checkbox{width:20px;height:20px;cursor:pointer;}
-    .feed-floating-bar{background:var(--surface);border-top:1px solid var(--surface-border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+    /* Camera Stream Overlay */
+    .camera-box{width:100%;max-width:500px;background:#000;border-radius:var(--radius);overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;}
+    .camera-video{width:100%;height:350px;object-fit:cover;}
+    .camera-actions{padding:15px;display:flex;gap:15px;justify-content:center;width:100%;background:rgba(0,0,0,0.8);}
+    .btn-snap{width:60px;height:60px;border-radius:50%;background:#fff;border:4px solid var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="brand"><i class="fa-solid fa-hospital-user"></i><span>LNJP LabHub</span></div>
+      <div class="user-actions">
+        <span id="navUserInfo" style="font-size:13px;font-weight:600;color:var(--text-muted);display:none;"></span>
+        <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
+        <button class="btn-logout" id="btnLogout" style="display:none;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="view-login" class="auth-card">
+      <i class="fa-solid fa-shield-halved" style="font-size:3rem;color:var(--primary);margin-bottom:15px;"></i>
+      <h2 class="auth-title">Staff Portal Login</h2>
+      <p class="auth-desc">Sign in with your verified Google account to access clinical laboratory records.</p>
+      <button class="btn-google" onclick="loginWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="Google"> Continue with Google
+      </button>
+    </div>
+    
+    <div id="view-onboarding" class="auth-card" style="display:none;">
+      <h2 class="auth-title">Complete Your Profile</h2>
+      <p class="auth-desc">Please provide your hospital posting details for account verification.</p>
+      <div class="form-group"><label>Full Name:</label><input type="text" id="regFullName" placeholder="Dr. Name"></div>
+      <div class="form-group"><label>Designation:</label>
+        <select id="regDesignation">
+          <option value="Intern">Intern / Duty Doctor</option>
+          <option value="Junior Resident">Junior Resident (JR)</option>
+          <option value="Senior Resident">Senior Resident (SR)</option>
+          <option value="Consultant / Faculty">Consultant / Faculty</option>
+          <option value="Nursing Officer">Nursing Officer</option>
+          <option value="Lab Technician">Lab Technician</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Primary Department / Unit:</label><select id="regDepartment"></select></div>
+      <button class="btn-submit" onclick="submitProfile()"><i class="fa-solid fa-paper-plane"></i> Submit for Approval</button>
+    </div>
+
+    <div id="view-pending" class="auth-card" style="display:none;">
+      <i class="fa-solid fa-clock-rotate-left" style="font-size:3rem;color:var(--warning);margin-bottom:15px;"></i>
+      <h2 class="auth-title">Approval Pending</h2>
+      <p class="auth-desc" id="pendingMsg">Your profile has been submitted. The Administrator will review and activate your access.</p>
+      <button class="btn-submit" style="background:var(--bg);color:var(--text-main);border:1px solid var(--surface-border);" onclick="checkUserSession()"><i class="fa-solid fa-rotate"></i> Check Status</button>
+    </div>
+
+    <div id="view-main" style="display:none;">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tabBtnSearch" onclick="switchTab('search')"><i class="fa-solid fa-magnifying-glass"></i> Search Directory</button>
+        <button class="tab-btn" id="tabBtnUpload" onclick="switchTab('upload')"><i class="fa-solid fa-camera"></i> Intern Upload Desk</button>
+        <button class="tab-btn" id="tabBtnAdmin" style="display:none;" onclick="switchTab('admin')"><i class="fa-solid fa-user-shield"></i> 🛡️ Admin Panel</button>
+      </div>
+
+      <div id="tab-search" class="panel active">
+        <div class="card">
+          <input type="text" id="liveSearchInput" class="search-input" placeholder="Search by batch detail, serial range, or date..." oninput="applyFilters()">
+          <div class="filter-chips" id="windowChips"><span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Window:</span></div>
+          <div class="filter-chips" id="deptChips"><span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Dept:</span></div>
+          <div class="filter-chips" style="margin-top:12px;align-items:center;">
+            <span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Date:</span>
+            <div class="chip active" id="dateChipAll" onclick="setDateFilter('ALL',this)">All dates</div>
+            <input type="date" id="datePicker" style="padding:6px 10px;border-radius:8px;border:1px solid var(--surface-border);background:var(--bg);color:var(--text-main);font-size:13px;font-weight:600;" onchange="setDateFilter(this.value,null)">
+            <button class="chip" onclick="clearDateFilter()" style="margin-left:4px;">Clear</button>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width:16px;height:16px;"> Select All</label>
+              <span id="resultsCount" style="font-size:13px;font-weight:600;color:var(--text-muted);">Loading records...</span>
+            </div>
+            <button class="theme-toggle" onclick="fetchDatabase(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          </div>
+          <div class="results-grid" id="resultsGrid"></div>
+          <div class="bulk-bar" id="bulkBar">
+            <strong id="selectedCount" style="font-size:14px;color:var(--primary);">0 selected</strong>
+            <div class="bulk-actions-group">
+              <button class="btn-bulk btn-bulk-clear" onclick="clearSelection()">Clear</button>
+              <button class="btn-bulk btn-bulk-share" onclick="shareSelectedWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Share</button>
+              <button class="btn-bulk btn-bulk-delete" id="btnBulkDelete" style="display:none;" onclick="deleteSelectedRecords()"><i class="fa-solid fa-trash"></i> Delete Selected</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-upload" class="panel">
+        <div class="card" id="uploadDeskCard">
+          <div class="card-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Batch & Compile PDF</div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;">
+            <div class="form-group"><label>Target Window:</label><select id="uploadWindowType"></select></div>
+            <div class="form-group"><label>Collection Date:</label><input type="date" id="uploadDate"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Batch Description / Range / Time (e.g., "1-215 BUSE", "Routine CBCs up to 120", "Till 16:14"):</label>
+            <input type="text" id="batchDescription" placeholder="e.g. Routine CBCs up to sample 120">
+          </div>
+
+          <div class="upload-zone-container">
+            <div class="upload-zone" onclick="startHDCamera()">
+              <i class="fa-solid fa-camera" style="font-size:2rem;color:var(--primary);margin-bottom:8px;"></i>
+              <p style="font-weight:600;font-size:13px;">Capture HD Photo</p>
+            </div>
+            <div class="upload-zone" onclick="document.getElementById('fileChooser').click()">
+              <i class="fa-solid fa-images" style="font-size:2rem;color:var(--primary);margin-bottom:8px;"></i>
+              <p style="font-weight:600;font-size:13px;">Select from Gallery</p>
+              <input type="file" id="fileChooser" accept="image/*" multiple style="display:none;" onchange="handleFileSelection(event)">
+            </div>
+          </div>
+
+          <div class="preview-tray" id="previewTray"></div>
+          
+          <button class="btn-submit" id="btnUpload" style="margin-top:15px;" onclick="generatePDFAndUpload()"><i class="fa-solid fa-file-pdf"></i> Compile PDF & Save</button>
+          <p id="uploadStatusText" style="text-align:center;font-size:13px;font-weight:600;margin-top:10px;"></p>
+        </div>
+      </div>
+
+      <div id="tab-admin" class="panel">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-users-gear"></i> User Approvals & Role Management</div>
+          <table class="admin-table">
+            <thead><tr><th>User Details</th><th>Posting / Dept</th><th>Status / Role</th><th>Actions</th></tr></thead>
+            <tbody id="adminUserTableBody"><tr><td colspan="4">Loading registered staff...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card" style="margin-top:20px;">
+          <div class="card-title"><i class="fa-solid fa-building"></i> Manage Departments</div>
+          <div class="dept-manage-row">
+            <input type="text" id="newDeptName" class="search-input" style="margin-bottom:0;" placeholder="Enter new department name (e.g. Ortho EM)">
+            <button class="btn-submit" style="width:auto;padding:10px 16px;" onclick="addDepartment()"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>
+          <div id="deptListContainer" style="margin-top:12px;"></div>
+        </div>
+        <div class="card" style="margin-top:20px;">
+          <div class="card-title"><i class="fa-solid fa-window-maximize"></i> Manage Windows</div>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Windows appear as filter chips and in the Upload dropdown for every user.</p>
+          <div class="dept-manage-row">
+            <input type="text" id="newWindowName" class="search-input" style="margin-bottom:0;" placeholder="e.g. Window 3 (Markers)">
+            <button class="btn-submit" style="width:auto;padding:10px 16px;" onclick="addWindow()"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>
+          <div id="windowListContainer" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen HD Camera View Modal -->
+  <div class="modal" id="cameraModal">
+    <div class="camera-box">
+      <video id="cameraFeed" class="camera-video" autoplay playsinline></video>
+      <div class="camera-actions">
+        <button class="btn-submit" style="width:auto;background:var(--danger);" onclick="stopCamera()"><i class="fa-solid fa-xmark"></i> Close</button>
+        <button class="btn-snap" onclick="captureSnap()"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Viewer Modal -->
+  <div class="modal" id="imageModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      <img src="" id="modalImage" class="modal-img">
+      <div class="modal-toolbar">
+        <button class="tool-btn" onclick="zoomImage(.2)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+        <button class="tool-btn" onclick="zoomImage(-.2)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+        <button class="tool-btn" onclick="rotateImage()"><i class="fa-solid fa-rotate-right"></i></button>
+        <a id="modalDownloadLink" class="tool-btn" target="_blank"><i class="fa-solid fa-up-right-from-square"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Metadata Modal -->
+  <div class="modal" id="editModal">
+    <div class="modal-content" style="background:var(--surface);padding:25px;border-radius:var(--radius);width:95%;max-width:480px;box-shadow:var(--shadow);">
+      <button class="modal-close" style="top:10px;right:15px;color:var(--text-muted);" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+      <h3 style="color:var(--primary);margin-bottom:15px;align-self:flex-start;">✏️ Update Batch Metadata</h3>
+      <input type="hidden" id="editRowIndex">
+      <div class="form-group" style="width:100%;"><label>Description / Details:</label><input type="text" id="editDescription"></div>
+      <button class="btn-submit" id="btnSaveEdit" onclick="saveRecordCorrection()"><i class="fa-solid fa-check"></i> Save Correction</button>
+    </div>
+  </div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+const SUPABASE_URL="https://leytpfrbrvrsihowgcwg.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxleXRwZnJicnZyc2lob3dnY3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDgyMzAsImV4cCI6MjEwMjI4NDIzMH0.rkR4Ndf7eyhwOKcWdPcfVV4dsaIaNpLvIUpFf63_W9E";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbw9qjLCPhAXlJwDMas5ydr7_WfryVV78EUxr3mo3pb2-DW6sxRoH95FQUlWqfFyhdS6ng/exec";
+
+const _supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{detectSessionInUrl:true,flowType:'pkce',persistSession:true,autoRefreshToken:true,storage:window.localStorage}});
+
+let selectedReports=new Map(),currentlyFilteredRecords=[],currentUser=null,currentProfile=null,rawRecords=[],capturedImages=[],activeWindowFilter="ALL",activeDeptFilter="ALL",activeDateFilter="ALL",currentZoom=1,currentRotation=0,departmentList=[],windowList=[],mediaStream=null;
+const DEFAULT_DEPTS=["Med EM","Sx EM","PICU","CLR","W14","Ortho EM","ICU","Other"];
+const DEFAULT_WINDOWS=["Window 1","Window 2"];
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  document.getElementById('uploadDate').value = new Date().toISOString().split('T')[0];
+  _supabaseClient.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION')await checkUserSession();
+    if(event==='SIGNED_OUT')showView('view-login');
+  });
+  await checkUserSession();
+});
+
+function getDirectImageUrl(url){if(!url)return'';const match=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/)||String(url).match(/id=([a-zA-Z0-9_-]+)/);return(match&&match[1])?`https://lh3.googleusercontent.com/d/${match[1]}`:url;}
+
+async function loadDepartments(){
+  try{const{data,error}=await _supabaseClient.from('departments').select('name').order('name');departmentList=(error||!data||!data.length)?[...DEFAULT_DEPTS]:data.map(d=>d.name);}catch(e){departmentList=[...DEFAULT_DEPTS];}
+  if(!departmentList.includes("Other"))departmentList.push("Other");
+  renderDeptChips();renderRegDepartmentSelect();if(currentProfile?.role==='admin')renderDeptAdminList();
+}
+function renderDeptChips(){const c=document.getElementById('deptChips');if(!c)return;let h=`<span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Dept:</span><div class="chip ${activeDeptFilter==='ALL'?'active':''}" onclick="setDeptFilter('ALL',this)">All</div>`;departmentList.forEach(d=>h+=`<div class="chip ${activeDeptFilter===d?'active':''}" onclick="setDeptFilter('${d}',this)">${d}</div>`);c.innerHTML=h;}
+function renderRegDepartmentSelect(){const s=document.getElementById('regDepartment');if(s)s.innerHTML=departmentList.map(d=>`<option value="${d}">${d}</option>`).join('');}
+function renderDeptAdminList(){const c=document.getElementById('deptListContainer');if(!c)return;c.innerHTML=departmentList.length?departmentList.map(d=>`<div class="dept-list-item"><span>${d}</span><button class="btn-table btn-delete-dept" onclick="deleteDepartment('${d}')"><i class="fa-solid fa-trash"></i> Delete</button></div>`).join(''):'<p style="color:var(--text-muted);">No departments yet.</p>';}
+async function addDepartment(){const input=document.getElementById('newDeptName'),name=(input.value||'').trim();if(!name)return alert('Enter a department name');if(departmentList.includes(name))return alert('Department already exists');try{const{error}=await _supabaseClient.from('departments').insert({name});if(error)throw error;input.value='';await loadDepartments();}catch(e){departmentList.push(name);departmentList.sort();renderDeptChips();renderRegDepartmentSelect();renderDeptAdminList();}}
+async function deleteDepartment(name){if(name==="Other")return alert('"Other" cannot be deleted.');if(!confirm(`Delete department "${name}"?`))return;try{const{error}=await _supabaseClient.from('departments').delete().eq('name',name);if(error)throw error;await loadDepartments();}catch(e){departmentList=departmentList.filter(d=>d!==name);renderDeptChips();renderRegDepartmentSelect();renderDeptAdminList();}}
+
+async function loadWindows(){
+  try{const{data,error}=await _supabaseClient.from('windows').select('name').order('name');windowList=(error||!data||!data.length)?[...DEFAULT_WINDOWS]:data.map(w=>w.name);}catch(e){windowList=[...DEFAULT_WINDOWS];}
+  renderWindowChips();renderUploadWindowSelect();if(currentProfile?.role==='admin')renderWindowAdminList();
+}
+function renderWindowChips(){const c=document.getElementById('windowChips');if(!c)return;let h=`<span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Window:</span><div class="chip ${activeWindowFilter==='ALL'?'active':''}" onclick="setWindowFilter('ALL',this)">All</div>`;windowList.forEach(w=>h+=`<div class="chip ${activeWindowFilter==='ALL'?'active':''}" onclick="setWindowFilter('${w}',this)">${w}</div>`);c.innerHTML=h;}
+function renderUploadWindowSelect(){const s=document.getElementById('uploadWindowType');if(s)s.innerHTML=windowList.map(w=>`<option value="${w}">${w}</option>`).join('');}
+function renderWindowAdminList(){const c=document.getElementById('windowListContainer');if(!c)return;c.innerHTML=windowList.length?windowList.map(w=>`<div class="dept-list-item"><span>${w}</span><button class="btn-table btn-delete-dept" onclick="deleteWindow('${w}')"><i class="fa-solid fa-trash"></i> Delete</button></div>`).join(''):'<p style="color:var(--text-muted);">No windows yet.</p>';}
+async function addWindow(){const input=document.getElementById('newWindowName'),name=(input.value||'').trim();if(!name)return alert('Enter a window name');if(windowList.includes(name))return alert('Window already exists');try{const{error}=await _supabaseClient.from('windows').insert({name});if(error)throw error;input.value='';await loadWindows();}catch(e){windowList.push(name);windowList.sort();renderWindowChips();renderUploadWindowSelect();renderWindowAdminList();}}
+async function deleteWindow(name){if(!confirm(`Delete window "${name}"? Existing reports will keep their old window label.`))return;try{const{error}=await _supabaseClient.from('windows').delete().eq('name',name);if(error)throw error;await loadWindows();}catch(e){windowList=windowList.filter(w=>w!==name);renderWindowChips();renderUploadWindowSelect();renderWindowAdminList();}}
+
+async function checkUserSession(){
+  try{
+    if(window.location.hash.includes('access_token')||window.location.search.includes('code=')){setTimeout(()=>{window.history.replaceState({},document.title,window.location.origin+window.location.pathname);},800);}
+    const{data:{session},error:sessionError}=await _supabaseClient.auth.getSession();
+    if(sessionError||!session){showView('view-login');return;}
+    currentUser=session.user;
+    const{data:profile}=await _supabaseClient.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
+    if(!profile){await loadDepartments();showView('view-onboarding');return;}
+    currentProfile=profile;
+    if(profile.status==='pending'){showView('view-pending');return;}
+    if(profile.status==='rejected'){document.getElementById('pendingMsg').innerText="Your access request was not approved. Contact Administrator.";showView('view-pending');return;}
+    setupMainApp();
+  }catch(e){console.error("Session check error:",e);showView('view-login');}
+}
+
+function showView(viewId){['view-login','view-onboarding','view-pending','view-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=(id===viewId)?'block':'none';});const logoutBtn=document.getElementById('btnLogout');if(logoutBtn)logoutBtn.style.display=(viewId==='view-login')?'none':'inline-flex';}
+
+async function loginWithGoogle(){
+  try{
+    const redirectTo=window.location.origin+window.location.pathname;
+    const{error}=await _supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{access_type:'offline',prompt:'select_account'}}});
+    if(error){alert("Login failed: "+error.message);console.error(error);}
+  }catch(err){alert("Login error: "+err.message);console.error(err);}
+}
+
+async function logout(){await _supabaseClient.auth.signOut();window.location.href=window.location.origin+window.location.pathname;}
+
+async function submitProfile(){
+  const fullName=document.getElementById('regFullName').value.trim(),designation=document.getElementById('regDesignation').value,department=document.getElementById('regDepartment').value;
+  if(!fullName)return alert("Please enter your Full Name");
+  const{error}=await _supabaseClient.from('profiles').upsert({id:currentUser.id,email:currentUser.email,full_name:fullName,designation,department,role:'viewer',status:'pending'});
+  if(error)alert("Error saving profile: "+error.message);else await checkUserSession();
+}
+
+function setupMainApp(){
+  showView('view-main');
+  const navInfo=document.getElementById('navUserInfo');
+  if(navInfo){navInfo.style.display='inline';navInfo.innerText=`${currentProfile.full_name||'Staff'} (${String(currentProfile.role||'viewer').toUpperCase()})`;}
+  if(currentProfile.role==='admin'){const adminTab=document.getElementById('tabBtnAdmin');if(adminTab)adminTab.style.display='flex';loadAdminUsers();}
+  if(currentProfile.role==='viewer'){const uploadCard=document.getElementById('uploadDeskCard');if(uploadCard)uploadCard.innerHTML=`<div style="text-align:center;padding:40px 10px;color:var(--text-muted);"><i class="fa-solid fa-lock" style="font-size:2.5rem;margin-bottom:12px;"></i><h3>Upload Restricted</h3><p>You have Viewer access. Contact the administrator to grant you Editor role for uploads.</p></div>`;}
+  loadDepartments();loadWindows();fetchDatabase();
+}
+
+async function loadAdminUsers(){
+  const tbody=document.getElementById('adminUserTableBody');
+  const{data:users,error}=await _supabaseClient.from('profiles').select('*').order('created_at',{ascending:false});
+  if(error||!users){tbody.innerHTML=`<tr><td colspan="4">Error loading users.</td></tr>`;return;}
+  tbody.innerHTML="";
+  users.forEach(u=>{
+    const isSelf=u.id===currentUser.id;
+    tbody.innerHTML+=`<tr><td><strong>${u.full_name||'No Name'}</strong><br><span style="color:var(--text-muted);font-size:11px;">${u.email}</span></td><td>${u.designation}<br><span style="color:var(--text-muted);font-size:11px;">${u.department}</span></td><td><span class="badge ${u.status==='approved'?'badge-w1':'badge-w2'}">${u.status} (${u.role})</span></td><td>${isSelf?'<span style="color:var(--text-muted);font-size:11px;">(You)</span>':`<button class="btn-table btn-approve-viewer" onclick="updateUserRole('${u.id}','approved','viewer')">Viewer</button><button class="btn-table btn-approve-editor" onclick="updateUserRole('${u.id}','approved','editor')">Editor</button><button class="btn-table btn-reject" onclick="updateUserRole('${u.id}','rejected','viewer')">Reject</button>`}</td></tr>`;
+  });
+}
+
+async function updateUserRole(userId,status,role){const{error}=await _supabaseClient.from('profiles').update({status,role}).eq('id',userId);if(error)alert("Action failed: "+error.message);else loadAdminUsers();}
+
+function switchTab(tab){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));if(tab==='search'){document.getElementById('tabBtnSearch').classList.add('active');document.getElementById('tab-search').classList.add('active');}else if(tab==='upload'){document.getElementById('tabBtnUpload').classList.add('active');document.getElementById('tab-upload').classList.add('active');}else if(tab==='admin'){document.getElementById('tabBtnAdmin').classList.add('active');document.getElementById('tab-admin').classList.add('active');}}
+
+function toggleTheme(){const isDark=document.body.getAttribute('data-theme')==='dark';document.body.setAttribute('data-theme',isDark?'light':'dark');document.getElementById('themeIcon').className=isDark?'fa-solid fa-moon':'fa-solid fa-sun';}
+
+async function fetchDatabase(manual=false){
+  const countLabel=document.getElementById('resultsCount');
+  if(manual)countLabel.innerText="Syncing from Google Sheet...";
+  try{
+    const response=await fetch(SCRIPT_URL+"?t="+Date.now());
+    const data=await response.json();
+    if(Array.isArray(data)){
+      rawRecords=data.map(r=>({
+        ...r,
+        description: r.description || "Routine Batch",
+        pdfUrl: r.pdfUrl || r.imgUrl || ""
+      }));
+    }else rawRecords=[];
+    applyFilters();
+  }catch(err){console.error("Fetch error:",err);countLabel.innerText="Error syncing with Sheet.";}
+}
+
+function setWindowFilter(win,el){activeWindowFilter=win;document.querySelectorAll('#windowChips .chip').forEach(c=>c.classList.remove('active'));if(el)el.classList.add('active');applyFilters();}
+function setDeptFilter(dept,el){activeDeptFilter=dept;document.querySelectorAll('#deptChips .chip').forEach(c=>c.classList.remove('active'));if(el)el.classList.add('active');applyFilters();}
+function setDateFilter(dateValue,el){activeDateFilter=dateValue;document.querySelectorAll('#dateChipAll').forEach(c=>c.classList.remove('active'));if(dateValue==='ALL'){document.getElementById('dateChipAll').classList.add('active');document.getElementById('datePicker').value='';}else document.getElementById('dateChipAll').classList.remove('active');applyFilters();}
+function clearDateFilter(){setDateFilter('ALL',null);}
+
+function applyFilters(){
+  const query=String(document.getElementById('liveSearchInput').value||'').toLowerCase().trim();
+  const grid=document.getElementById('resultsGrid'),countLabel=document.getElementById('resultsCount');
+  
+  const filtered=rawRecords.filter(r=>{
+    const descStr=String(r.description||'').toLowerCase(),winStr=String(r.windowType||'').toLowerCase();
+    const matchQuery=!query||descStr.includes(query)||winStr.includes(query);
+    const matchWindow=(activeWindowFilter==='ALL')||(String(r.windowType||'')===activeWindowFilter);
+    let matchDate=true;
+    if(activeDateFilter!=='ALL'&&r.date){
+      matchDate=(r.date===activeDateFilter);
+    }
+    return matchQuery&&matchWindow&&matchDate;
+  });
+
+  currentlyFilteredRecords=[...filtered];
+  countLabel.innerText=`Showing ${filtered.length} report batch(es) (7-day window)`;
+  grid.innerHTML="";
+  if(!filtered.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No matching batches found.</div>`;updateBulkBar();return;}
+  
+  const isAdmin=currentProfile&&currentProfile.role==='admin';
+  const isEditorOrAdmin=currentProfile&&(currentProfile.role==='admin'||currentProfile.role==='editor');
+
+  [...filtered].reverse().forEach(r=>{
+    let badgeClass='badge-other';if(r.windowType==='Window 1')badgeClass='badge-w1';else if(r.windowType==='Window 2')badgeClass='badge-w2';
+    const uniqueId=`${r.rowIndex}_${r.date}`.replace(/\s+/g,'_'),isSelected=selectedReports.has(uniqueId);
+    
+    const card=document.createElement('div');
+    card.className='result-card'+(isSelected?' selected':'');
+    card.dataset.id=uniqueId;
+    card.innerHTML=`
+      <input type="checkbox" class="card-checkbox" ${isSelected?'checked':''} onchange="toggleSelect('${uniqueId}',this.checked,this)">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-left:26px;">
+          <strong>${r.description||'Routine Log'}</strong>
+          <span class="badge ${badgeClass}">${r.windowType||'—'}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;padding-left:26px;">
+          📅 Date: <span style="color:var(--text-main);font-weight:600;">${r.date||'Today'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;padding-left:26px;">
+          📄 Pages: <span style="color:var(--text-main);font-weight:600;">${r.pageCount || 1} page(s)</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <a class="btn-action btn-view" style="text-decoration:none;" href="${r.pdfUrl}" target="_blank"><i class="fa-solid fa-file-pdf"></i> View PDF</a>
+        ${isEditorOrAdmin?`<button class="btn-action btn-edit" onclick="openEditModal(${r.rowIndex})"><i class="fa-solid fa-pen"></i> Edit</button>`:''}
+        ${isAdmin?`<button class="btn-action btn-del" onclick="deleteEntry(${r.rowIndex},'${String(r.description||'Batch').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>`:''}
+        <button class="btn-action btn-wa" onclick="shareWhatsApp('${String(r.description||'').replace(/'/g,"\\'")}','${r.date}','${r.windowType}','${r.pdfUrl}')"><i class="fa-brands fa-whatsapp"></i> Share</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+  updateBulkBar();
+}
+
+function openEditModal(rowIndex){
+  const record=rawRecords.find(r=>r.rowIndex===rowIndex);
+  if(!record)return;
+  document.getElementById('editRowIndex').value=rowIndex;
+  document.getElementById('editDescription').value=record.description||'';
+  document.getElementById('editModal').classList.add('active');
+}
+function closeEditModal(){document.getElementById('editModal').classList.remove('active');}
+
+async function saveRecordCorrection(){
+  const rowIndex=parseInt(document.getElementById('editRowIndex').value);
+  let description=document.getElementById('editDescription').value.trim();
+  const btn=document.getElementById('btnSaveEdit');btn.disabled=true;btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+  try{
+    const response=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"edit",rowIndex,description})});
+    const res=await response.json();
+    if(res.status==='success'){closeEditModal();await fetchDatabase(true);}else alert("Update failed: "+res.message);
+  }catch(err){alert("Error saving correction: "+err.message);}finally{btn.disabled=false;btn.innerHTML=`<i class="fa-solid fa-check"></i> Save Correction`;}
+}
+
+async function deleteEntry(rowIndex,desc){
+  if(!confirm(`Are you sure you want to permanently delete "${desc}"?`))return;
+  try{
+    const response=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"delete",rowIndex})});
+    const res=await response.json();
+    if(res.status==='success')await fetchDatabase(true);else alert("Delete failed: "+res.message);
+  }catch(err){alert("Error deleting entry: "+err.message);}
+}
+
+function toggleSelect(id,isChecked,checkbox){
+  const card=checkbox?checkbox.closest('.result-card'):document.querySelector(`.result-card[data-id="${id}"]`);
+  if(isChecked){
+    const row=rawRecords.find(r=>`${r.rowIndex}_${r.date}`.replace(/\s+/g,'_')===id);
+    if(row){
+      selectedReports.set(id,row);
+      if(card)card.classList.add('selected');
+    }
+  }else{
+    selectedReports.delete(id);
+    if(card)card.classList.remove('selected');
+  }
+  updateBulkBar();
+}
+
+function toggleSelectAll(isChecked){currentlyFilteredRecords.forEach(r=>{const uniqueId=`${r.rowIndex}_${r.date}`.replace(/\s+/g,'_');toggleSelect(uniqueId,isChecked,null);});document.querySelectorAll('.card-checkbox').forEach(cb=>cb.checked=isChecked);}
+function updateBulkBar(){const bar=document.getElementById('bulkBar'),countEl=document.getElementById('selectedCount'),delBtn=document.getElementById('btnBulkDelete'),count=selectedReports.size;countEl.innerText=`${count} selected`;bar.classList.toggle('active',count>0);const isAdmin=currentProfile&&currentProfile.role==='admin';if(delBtn)delBtn.style.display=(isAdmin&&count>0)?'flex':'none';const selectAllCb=document.getElementById('selectAllCheckbox');if(selectAllCb)selectAllCb.checked=(count>0&&count===currentlyFilteredRecords.length);}
+function clearSelection(){selectedReports.clear();document.querySelectorAll('.card-checkbox').forEach(cb=>cb.checked=false);document.querySelectorAll('.result-card').forEach(c=>c.classList.remove('selected'));const selectAllCb=document.getElementById('selectAllCheckbox');if(selectAllCb)selectAllCb.checked=false;updateBulkBar();}
+
+async function deleteSelectedRecords(){if(!selectedReports.size)return;const count=selectedReports.size;if(!confirm(`Are you sure you want to permanently delete ALL ${count} selected records?`))return;const rowIndices=Array.from(selectedReports.values()).map(r=>r.rowIndex);const delBtn=document.getElementById('btnBulkDelete');delBtn.disabled=true;delBtn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Deleting...`;try{const response=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"bulk_delete",rowIndices})});const res=await response.json();if(res.status==='success'){clearSelection();await fetchDatabase(true);}else alert("Bulk delete failed: "+res.message);}catch(err){alert("Error deleting entries: "+err.message);}finally{delBtn.disabled=false;delBtn.innerHTML=`<i class="fa-solid fa-trash"></i> Delete Selected`;}}
+
+function shareWhatsApp(description,dateVal,windowType,pdfUrl){
+  const text=`📋 *${windowType} Report Batch*\n📅 *Date:* ${dateVal}\n📝 *Details:* ${description}\n\n🔗 *View PDF:* ${pdfUrl}`;
+  const whatsappUrl=`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  window.open(whatsappUrl,'_blank');
+}
+
+function shareSelectedWhatsApp(){
+  if(!selectedReports.size)return;
+  let message=`*LNJP Hospital – Report Batches (${selectedReports.size})*\n\n`,i=1;
+  selectedReports.forEach(r=>{
+    message+=`*${i}. ${r.description||'Routine Log'}*\n📅 Date: ${r.date||'Today'}\n🪟 ${r.windowType||'—'}\n📄 PDF: ${r.pdfUrl}\n\n`;
+    i++;
+  });
+  message+=`_Shared from LNJP LabHub_`;
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`,'_blank');
+}
+
+function openModal(url){const modal=document.getElementById('imageModal');document.getElementById('modalImage').src=url;document.getElementById('modalDownloadLink').href=url;currentZoom=1;currentRotation=0;updateTransform();modal.classList.add('active');}
+function closeModal(){document.getElementById('imageModal').classList.remove('active');}
+function zoomImage(factor){currentZoom=Math.max(.5,Math.min(currentZoom+factor,4));updateTransform();}
+function rotateImage(){currentRotation=(currentRotation+90)%360;updateTransform();}
+function updateTransform(){document.getElementById('modalImage').style.transform=`scale(${currentZoom}) rotate(${currentRotation}deg)`;}
+
+// ==========================================
+// HD CAMERA & FAST PHOTO CAPTURE
+// ==========================================
+async function startHDCamera() {
+  const video = document.getElementById('cameraFeed');
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 3840, max: 3840 },
+        height: { ideal: 2160, max: 2160 },
+        facingMode: { ideal: "environment" }
+      }
+    });
+    video.srcObject = mediaStream;
+    document.getElementById('cameraModal').classList.add('active');
+  } catch (err) {
+    alert("Camera permission denied or camera unavailable.");
+  }
+}
+
+function captureSnap() {
+  const video = document.getElementById('cameraFeed');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  const hdBase64 = canvas.toDataURL('image/jpeg', 0.90);
+  capturedImages.push(hdBase64);
+  renderThumbnailTray();
+}
+
+function stopCamera() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+  }
+  document.getElementById('cameraModal').classList.remove('active');
+}
+
+function compressImage(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload=e=>{
+      const img=new Image();
+      img.src=e.target.result;
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        const MAX_WIDTH=2000;
+        let width=img.width,height=img.height;
+        if(width>MAX_WIDTH){
+          height=Math.round((height*MAX_WIDTH)/width);
+          width=MAX_WIDTH;
+        }
+        canvas.width=width;canvas.height=height;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL('image/jpeg',0.88));
+      };
+    };
+  });
+}
+
+async function handleFileSelection(e) {
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    const base64 = await compressImage(file);
+    capturedImages.push(base64);
+  }
+  renderThumbnailTray();
+  e.target.value = "";
+}
+
+function renderThumbnailTray() {
+  const tray = document.getElementById('previewTray');
+  tray.innerHTML = "";
+  capturedImages.forEach((base64, index) => {
+    const box = document.createElement('div');
+    box.className = 'thumb-box';
+    box.innerHTML = `
+      <img src="${base64}">
+      <span class="page-badge">P${index + 1}</span>
+      <button class="thumb-remove" onclick="capturedImages.splice(${index}, 1); renderThumbnailTray();">×</button>
+    `;
+    tray.appendChild(box);
+  });
+}
+
+// ==========================================
+// CLIENT-SIDE PDF COMPILATION & UPLOAD
+// ==========================================
+async function generatePDFAndUpload() {
+  if (capturedImages.length === 0) return alert("Select or capture photos first!");
+
+  const windowType = document.getElementById('uploadWindowType').value;
+  const selectedDate = document.getElementById('uploadDate').value;
+  const description = document.getElementById('batchDescription').value.trim() || "Routine Log Batch";
+  const statusText = document.getElementById('uploadStatusText');
+  const btn = document.getElementById('btnUpload');
+
+  btn.disabled = true;
+  statusText.innerText = "⏳ Generating high-resolution PDF...";
+
+  try {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    for (let i = 0; i < capturedImages.length; i++) {
+      if (i > 0) pdf.addPage();
+      pdf.addImage(capturedImages[i], 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+    }
+
+    // Explicit base64 string conversion
+    const pdfBase64 = pdf.output('datauristring');
+
+    statusText.innerText = "⚡ Uploading batch to Google Drive...";
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "upload_pdf",
+        window: windowType,
+        date: selectedDate,
+        description: description,
+        pdfBase64: String(pdfBase64),
+        imagesArray: []
+      })
+    });
+
+    const res = await response.json();
+    if (res.status === "success") {
+      statusText.innerText = "✅ Batch compiled & saved as PDF!";
+      capturedImages = [];
+      document.getElementById('batchDescription').value = "";
+      renderThumbnailTray();
+      fetchDatabase();
+    } else {
+      alert("Upload failed: " + res.message);
+    }
+  } catch (err) {
+    console.error("PDF Upload Error:", err);
+    alert("Failed to create/upload PDF: " + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+</script>
+</body>
+</html> solid var(--surface-border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
 
     /* Camera Overlay */
     .camera-box{width:100%;max-width:500px;background:#000;border-radius:var(--radius);overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;}
