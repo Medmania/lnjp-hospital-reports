@@ -637,7 +637,9 @@ async function generatePDFAndUpload() {
       pdf.addImage(capturedImages[i], 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
     }
 
+    // Explicit base64 string conversion
     const pdfBase64 = pdf.output('datauristring');
+
     statusText.innerText = "⚡ Uploading batch to Google Drive...";
 
     const response = await fetch(SCRIPT_URL, {
@@ -647,7 +649,7 @@ async function generatePDFAndUpload() {
         window: windowType,
         date: selectedDate,
         description: description,
-        pdfBase64: pdfBase64,
+        pdfBase64: String(pdfBase64),
         imagesArray: []
       })
     });
@@ -669,6 +671,7 @@ async function generatePDFAndUpload() {
     btn.disabled = false;
   }
 }
+
 </script>
 </body>
 </html>
