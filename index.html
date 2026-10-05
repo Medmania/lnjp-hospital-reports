@@ -90,11 +90,26 @@
 
     .btn-bulk-share{background:#25D366;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;}
     
-    /* Camera Overlay */
-    .camera-box{width:100%;max-width:500px;background:#000;border-radius:var(--radius);overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;}
-    .camera-video{width:100%;height:350px;object-fit:cover;}
-    .camera-actions{padding:15px;display:flex;gap:15px;justify-content:center;width:100%;background:rgba(0,0,0,0.8);}
-    .btn-snap{width:60px;height:60px;border-radius:50%;background:#fff;border:4px solid var(--primary);cursor:pointer;}
+    /* ENHANCED CAMERA MODAL UI */
+    .camera-box{width:100vw;height:100vh;background:#000;position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:center;}
+    .camera-video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+    
+    .camera-top-bar{position:relative;z-index:10;width:100%;padding:16px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);}
+    .cam-count-badge{background:var(--primary);color:#fff;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+
+    .camera-bottom-panel{position:relative;z-index:10;width:100%;padding:20px 16px 30px;background:linear-gradient(to top, rgba(0,0,0,0.9), transparent);display:flex;flex-direction:column;gap:15px;align-items:center;}
+    .cam-mini-tray{display:flex;gap:8px;overflow-x:auto;width:100%;max-width:400px;height:60px;padding:2px;}
+    .cam-mini-thumb{width:56px;height:56px;border-radius:6px;object-fit:cover;border:2px solid var(--primary);flex-shrink:0;}
+
+    .camera-actions-row{display:flex;align-items:center;justify-content:space-around;width:100%;max-width:360px;}
+    .btn-cam-done{background:var(--success);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;}
+    .btn-snap-enhanced{width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid var(--primary);cursor:pointer;box-shadow:0 0 15px rgba(2,132,199,0.5);}
+    .btn-snap-enhanced:active{transform:scale(0.92);}
+    
+    /* Camera Shutter Flash Animation */
+    .flash-overlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;transition:opacity 0.15s ease-out;}
+    .flash-overlay.active{opacity:0.85;}
+
     .tool-btn{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;}
   </style>
 </head>
@@ -103,7 +118,6 @@
     <div class="nav-container">
       <div class="brand"><i class="fa-solid fa-hospital-user"></i><span>LNJP LabHub</span></div>
       <div class="user-actions">
-        <!-- PWA Install Button -->
         <button class="btn-install-pwa" id="btnInstallPWA" style="display:none;" onclick="triggerPwaInstall()"><i class="fa-solid fa-download"></i> Install App</button>
         <span id="navUserInfo" style="font-size:13px;font-weight:600;color:var(--text-muted);display:none;"></span>
         <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
@@ -151,7 +165,7 @@
       <div class="tab-bar">
         <button class="tab-btn active" id="tabBtnSearch" onclick="switchTab('search')"><i class="fa-solid fa-magnifying-glass"></i> Search Directory</button>
         <button class="tab-btn" id="tabBtnUpload" onclick="switchTab('upload')"><i class="fa-solid fa-camera"></i> Intern Upload Desk</button>
-        <button class="tab-btn" id="tabBtnAdmin" style="display:none;" onclick="switchTab('admin')"><i class="fa-solid fa-user-shield"></i> 🛡️ Admin Panel</button>
+        <button class="tab-btn" id="tabBtnAdmin" style="display:none;" onclick="switchTab('admin')"><i class="fa-solid fa-user-shield"></i> 🛡️️ Admin Panel</button>
       </div>
 
       <div id="tab-search" class="panel active">
@@ -252,19 +266,32 @@
             <input type="checkbox" id="gallerySelectCheckbox" style="width:20px;height:20px;" onchange="toggleCurrentSlideSelection(this.checked)">
             Select this page
           </label>
-          <button class="btn-bulk-share" onclick="shareSelectedFeedPages()"><i class="fa-brands fa-whatsapp"></i> Share (<span id="gallerySelectedCount">0</span>)</button>
+          <button class="btn-bulk-share" id="btnShareNative" onclick="shareSelectedFeedPages()"><i class="fa-brands fa-whatsapp"></i> Share Photos (<span id="gallerySelectedCount">0</span>)</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Camera Modal -->
+  <!-- SMART CAMERA MODAL WITH FLASH & LIVE TRAY -->
   <div class="modal" id="cameraModal">
     <div class="camera-box">
+      <div class="flash-overlay" id="flashOverlay"></div>
       <video id="cameraFeed" class="camera-video" autoplay playsinline></video>
-      <div class="camera-actions">
-        <button class="btn-submit" style="width:auto;background:var(--danger);" onclick="stopCamera()"><i class="fa-solid fa-xmark"></i> Close</button>
-        <button class="btn-snap" onclick="captureSnap()"></button>
+      
+      <div class="camera-top-bar">
+        <span class="cam-count-badge" id="camCountBadge">📸 0 Captured</span>
+        <button class="tool-btn" onclick="stopCamera()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="camera-bottom-panel">
+        <!-- Live Captured Images Mini Carousel -->
+        <div class="cam-mini-tray" id="camMiniTray"></div>
+
+        <div class="camera-actions-row">
+          <button class="btn-cam-done" onclick="stopCamera()"><i class="fa-solid fa-check"></i> Done & Review</button>
+          <button class="btn-snap-enhanced" onclick="captureSnap()"></button>
+          <div style="width:100px;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -645,17 +672,60 @@ function closeGalleryModal() {
   document.getElementById('galleryModal').classList.remove('active');
 }
 
-function shareSelectedFeedPages(){
+// ==========================================
+// NATIVE MULTI-FILE IMAGE SHARING API
+// ==========================================
+async function shareSelectedFeedPages(){
   if(!selectedFeedPages.size) return alert("Select at least one page to share!");
-  let text = `📋 *LNJP Lab Batch: ${activeFeedBatch.description}*\n📅 *Date:* ${formatDateDisplay(activeFeedBatch.date)}\n\n*Selected Pages:*\n`;
-  
-  selectedFeedPages.forEach((pageNum, url) => {
-    text += `📄 Page ${pageNum}: ${url}\n`;
-  });
 
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+  const btn = document.getElementById('btnShareNative');
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing Photos...`;
+
+  try {
+    const fileArray = [];
+    let textSummary = `📋 *LNJP Lab Batch: ${activeFeedBatch.description}*\n📅 *Date:* ${formatDateDisplay(activeFeedBatch.date)}\n\n`;
+
+    let count = 1;
+    for (const [url, pageNum] of selectedFeedPages.entries()) {
+      textSummary += `📄 Page ${pageNum}\n`;
+      
+      // Fetch image blob to send as native file
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], `Batch_P${pageNum}_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      fileArray.push(file);
+      count++;
+    }
+
+    // Use Web Share API if supported by mobile Chrome/Safari
+    if (navigator.canShare && navigator.canShare({ files: fileArray })) {
+      await navigator.share({
+        title: `LNJP Lab Batch: ${activeFeedBatch.description}`,
+        text: textSummary,
+        files: fileArray
+      });
+    } else {
+      // Fallback for desktop/unsupported browsers: create WhatsApp text intent
+      let fallbackText = textSummary + `\n*Image Links:*\n`;
+      selectedFeedPages.forEach((pageNum, url) => {
+        fallbackText += `📄 Page ${pageNum}: ${url}\n`;
+      });
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fallbackText)}`, '_blank');
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      alert("Sharing failed: " + err.message);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Share Photos (<span id="gallerySelectedCount">${selectedFeedPages.size}</span>)`;
+  }
 }
 
+// ==========================================
+// SMART CAMERA INTERFACE WITH FLASH & LIVE TRAY
+// ==========================================
 async function startHDCamera() {
   const video = document.getElementById('cameraFeed');
   try {
@@ -664,18 +734,43 @@ async function startHDCamera() {
     });
     video.srcObject = mediaStream;
     document.getElementById('cameraModal').classList.add('active');
+    updateCameraUI();
   } catch (err) { alert("Camera unavailable."); }
 }
 
 function captureSnap() {
   const video = document.getElementById('cameraFeed');
+  const flash = document.getElementById('flashOverlay');
+  
+  // Trigger Visual Flash Animation
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 150);
+
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  capturedImages.push(canvas.toDataURL('image/jpeg', 0.85));
+  
+  const b64 = canvas.toDataURL('image/jpeg', 0.85);
+  capturedImages.push(b64);
+  
+  updateCameraUI();
   renderThumbnailTray();
+}
+
+function updateCameraUI() {
+  document.getElementById('camCountBadge').innerText = `📸 ${capturedImages.length} Captured`;
+  
+  const miniTray = document.getElementById('camMiniTray');
+  miniTray.innerHTML = "";
+  capturedImages.forEach((b64, idx) => {
+    const img = document.createElement('img');
+    img.src = b64;
+    img.className = 'cam-mini-thumb';
+    miniTray.appendChild(img);
+  });
+  miniTray.scrollLeft = miniTray.scrollWidth;
 }
 
 function stopCamera() {
