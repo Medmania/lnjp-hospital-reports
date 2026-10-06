@@ -3,27 +3,37 @@
 // ==========================================
 
 const USER_GUIDE_CONFIG = {
-  title: "LNJP LabHub • Quick Guide",
+  title: "LNJP LabHub • Comprehensive User Guide",
   steps: [
     {
+      icon: "fa-bolt",
+      heading: "1. Optimized Medical Workflow",
+      text: "Designed specifically for clinical staff to locate, tag, and share laboratory register records seamlessly without manual logging or pen-and-paper tracking."
+    },
+    {
       icon: "fa-magnifying-glass",
-      heading: "1. Search & Filter Registers",
-      text: "Use top chips (Window 1, Window 2) or register tags (CBC, PT/INR, BUSE/LFT/KFT) to narrow down lab logs instantly."
+      heading: "2. Precision Search & Instant Filtering",
+      text: "Filter records by Window (Window 1, Window 2), Register Category (CBC Emergency, CBC Routine, BUSE/LFT/KFT, PT/INR), Collection Date, or direct serial ranges (e.g., 1-300)."
     },
     {
       icon: "fa-camera",
-      heading: "2. Upload Register Batches",
-      text: "Go to 'Intern Upload Desk'. Fill in Target Window, Register Category, Date, and mandatory Batch Title. Use camera or gallery picker to add images."
+      heading: "3. Fast HD Batch Uploads",
+      text: "Upload register pages via camera or gallery. High-resolution HD compression maintains pin-sharp clarity when zooming in on numeric values while maximizing upload speed."
     },
     {
-      icon: "fa-eye",
-      heading: "3. View & Tag Patient Names",
-      text: "Click 'View Report Records' on any card. Swipe through images and check 'Select this page'. Type patient details directly into the note bar."
+      icon: "fa-user-pen",
+      heading: "4. In-Viewer Patient Tagging",
+      text: "Open any register record via 'View Report Records'. Check 'Select this page' on a relevant page to instantly unlock a live note bar where you can type patient names or serial numbers directly."
     },
     {
       icon: "fa-brands fa-whatsapp",
-      heading: "4. Direct WhatsApp Sharing",
-      text: "Click 'Share Photos'. Images will automatically share with formatted captions like 'Manu - PT / INR' or 'Dilshad - CBC Emergency'."
+      heading: "5. Smart WhatsApp Exporting",
+      text: "Tap 'Share Photos' to send selected register pages with auto-formatted patient and category captions (e.g., 'Manu - PT / INR' or 'Dilshad - CBC Emergency')."
+    },
+    {
+      icon: "fa-mobile-screen-button",
+      heading: "6. Smartphone-Optimized Navigation",
+      text: "Supports full pinch-to-zoom, swipe gestures, and full integration with your smartphone's physical back button to close viewers smoothly without leaving the app."
     }
   ]
 };
@@ -46,7 +56,7 @@ function initUserGuideSystem() {
   `).join('');
 
   guideModal.innerHTML = `
-    <div class="card" style="width:90%;max-width:460px;position:relative;max-height:85vh;overflow-y:auto;">
+    <div class="card" style="width:90%;max-width:480px;position:relative;max-height:85vh;overflow-y:auto;">
       <button class="tool-btn" style="position:absolute;top:15px;right:15px;color:var(--text-main);" onclick="closeGuideModal()"><i class="fa-solid fa-xmark"></i></button>
       <h3 style="color:var(--primary);margin-bottom:18px;display:flex;align-items:center;gap:8px;">
         <i class="fa-solid fa-circle-info"></i> ${USER_GUIDE_CONFIG.title}
