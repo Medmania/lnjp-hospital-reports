@@ -56,7 +56,7 @@
     .result-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;gap:12px;position:relative;}
     .badge{font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;display:inline-block;}
     .badge-w1{background:#dbeafe;color:#1e40af}.badge-w2{background:#fef3c7;color:#92400e}.badge-cat{background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;}
-    .btn-submit{width:100%;background:var(--primary);color:#fff;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+    .btn-submit{width:100%;background:var(--primary);color:#fff;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
     .btn-action{padding:8px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
     .btn-edit{background:#fef3c7;color:#b45309}.btn-del{background:#fee2e2;color:#dc2626}
     .admin-table{width:100%;border-collapse:collapse;margin-top:15px;font-size:13px}
@@ -75,20 +75,25 @@
     .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;align-items:center;justify-content:center;padding:0}
     .modal.active{display:flex}
 
-    /* FULLSCREEN SWIPE GALLERY MODAL */
+    /* FULLSCREEN REPORT GALLERY MODAL */
     .gallery-modal-content{width:100vw;height:100vh;display:flex;flex-direction:column;justify-content:space-between;position:relative;background:#000;}
     .gallery-header{padding:12px 16px;background:rgba(0,0,0,0.85);color:#fff;display:flex;justify-content:space-between;align-items:center;z-index:10;}
-    .gallery-footer{padding:12px 16px;background:rgba(0,0,0,0.85);color:#fff;display:flex;flex-direction:column;gap:10px;z-index:10;}
+    .gallery-footer{padding:12px 16px;background:rgba(0,0,0,0.92);color:#fff;display:flex;flex-direction:column;gap:10px;z-index:10;}
     
-    .swiper{width:100%;height:calc(100vh - 160px);}
+    .swiper{width:100%;height:calc(100vh - 210px);}
     .swiper-slide{display:flex;align-items:center;justify-content:center;overflow:hidden;}
     .swiper-slide img{max-width:100%;max-height:100%;object-fit:contain;}
 
-    /* Quick-Scroll Pointer Line */
-    .swiper-scrollbar{background:rgba(255,255,255,0.2) !important;height:8px !important;border-radius:4px !important;position:relative !important;width:100% !important;margin:4px 0 !important;cursor:pointer;}
+    .swiper-scrollbar{background:rgba(255,255,255,0.2) !important;height:8px !important;border-radius:4px !important;position:relative !important;width:100% !important;margin:2px 0 !important;cursor:pointer;}
     .swiper-scrollbar-drag{background:var(--primary) !important;border-radius:4px !important;}
 
-    .btn-bulk-share{background:#25D366;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+    /* PATIENT NAME TAG INPUT IN TOOLBAR */
+    .patient-tag-box{display:none;align-items:center;gap:8px;width:100%;background:rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);}
+    .patient-tag-box.active{display:flex;}
+    .patient-input{background:none;border:none;color:#fff;font-size:14px;width:100%;outline:none;font-weight:500;}
+    .patient-input::placeholder{color:#94a3b8;}
+
+    .btn-bulk-share{background:#25D366;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
     
     /* ENHANCED CAMERA MODAL UI */
     .camera-box{width:100vw;height:100vh;background:#000;position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:center;}
@@ -106,7 +111,6 @@
     .btn-snap-enhanced{width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid var(--primary);cursor:pointer;box-shadow:0 0 15px rgba(2,132,199,0.5);}
     .btn-snap-enhanced:active{transform:scale(0.92);}
     
-    /* Camera Shutter Flash Animation */
     .flash-overlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;transition:opacity 0.15s ease-out;}
     .flash-overlay.active{opacity:0.85;}
 
@@ -258,7 +262,7 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN SWIPE GALLERY MODAL -->
+  <!-- FULLSCREEN REPORT GALLERY MODAL -->
   <div class="modal" id="galleryModal">
     <div class="gallery-modal-content">
       <div class="gallery-header">
@@ -277,6 +281,13 @@
 
       <div class="gallery-footer">
         <div class="swiper-scrollbar"></div>
+        
+        <!-- Patient Note Input Bar -->
+        <div class="patient-tag-box" id="patientTagBox">
+          <i class="fa-solid fa-user-pen" style="color:#38bdf8;font-size:13px;"></i>
+          <input type="text" id="patientNameInput" class="patient-input" placeholder="Patient Name / S.No (e.g. Manu)" oninput="updateCurrentSlidePatientName(this.value)">
+        </div>
+
         <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
             <input type="checkbox" id="gallerySelectCheckbox" style="width:20px;height:20px;" onchange="toggleCurrentSlideSelection(this.checked)">
@@ -592,7 +603,7 @@ function applyFilters(){
         <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">🖼 Pages: <span style="color:var(--text-main);font-weight:600;">${totalPages} page(s)</span></div>
       </div>
       
-      <button class="btn-submit" style="padding:8px;font-size:13px;" onclick="openGalleryModalByRow(${r.rowIndex})"><i class="fa-solid fa-expand"></i> Open Swipe Gallery</button>
+      <button class="btn-submit" onclick="openGalleryModalByRow(${r.rowIndex})"><i class="fa-solid fa-eye"></i> View Report Records</button>
       
       <div style="display:flex;gap:6px;margin-top:4px;">
         ${isEditorOrAdmin ? `<button class="btn-action btn-edit" style="flex:1;" onclick="openEditModal(${r.rowIndex})"><i class="fa-solid fa-pen"></i> Edit Title</button>` : ''}
@@ -718,7 +729,19 @@ function updateGallerySlideInfo(swiper, total) {
   const currentUrl = currentSlide ? currentSlide.dataset.url : "";
   
   const checkbox = document.getElementById('gallerySelectCheckbox');
-  checkbox.checked = selectedFeedPages.has(currentUrl);
+  const patientBox = document.getElementById('patientTagBox');
+  const patientInput = document.getElementById('patientNameInput');
+  
+  const isSelected = selectedFeedPages.has(currentUrl);
+  checkbox.checked = isSelected;
+
+  if (isSelected) {
+    patientBox.classList.add('active');
+    patientInput.value = selectedFeedPages.get(currentUrl).patientName || "";
+  } else {
+    patientBox.classList.remove('active');
+    patientInput.value = "";
+  }
 }
 
 function toggleCurrentSlideSelection(isChecked) {
@@ -727,12 +750,31 @@ function toggleCurrentSlideSelection(isChecked) {
   const url = activeSlide ? activeSlide.dataset.url : "";
   const pageNum = activeSlide ? activeSlide.dataset.page : "1";
 
+  const patientBox = document.getElementById('patientTagBox');
+  const patientInput = document.getElementById('patientNameInput');
+
   if (isChecked && url) {
-    selectedFeedPages.set(url, pageNum);
+    selectedFeedPages.set(url, { pageNum, patientName: "" });
+    patientBox.classList.add('active');
+    patientInput.value = "";
+    patientInput.focus();
   } else {
     selectedFeedPages.delete(url);
+    patientBox.classList.remove('active');
+    patientInput.value = "";
   }
   updateSelectedCountDisplay();
+}
+
+function updateCurrentSlidePatientName(val) {
+  if (!swiperInstance) return;
+  const activeSlide = swiperInstance.slides[swiperInstance.activeIndex];
+  const url = activeSlide ? activeSlide.dataset.url : "";
+  if (selectedFeedPages.has(url)) {
+    const item = selectedFeedPages.get(url);
+    item.patientName = val.trim();
+    selectedFeedPages.set(url, item);
+  }
 }
 
 function updateSelectedCountDisplay() {
@@ -744,7 +786,7 @@ function closeGalleryModal() {
 }
 
 // ==========================================
-// NATIVE MULTI-FILE IMAGE SHARING API
+// CLEAN IMAGE SHARING WITH AUTO CATEGORY TAGGING
 // ==========================================
 async function shareSelectedFeedPages(){
   if(!selectedFeedPages.size) return alert("Select at least one page to share!");
@@ -755,12 +797,24 @@ async function shareSelectedFeedPages(){
 
   try {
     const fileArray = [];
-    let textSummary = "";
+    const categoryTag = activeFeedBatch?.category || "Lab Report";
+    
+    let captionsList = [];
+    selectedFeedPages.forEach((data) => {
+      if (data.patientName) {
+        captionsList.push(`${data.patientName} - ${categoryTag}`);
+      } else {
+        captionsList.push(`${categoryTag}`);
+      }
+    });
 
-    for (const [url, pageNum] of selectedFeedPages.entries()) {
+    // Formats cleanly as "Manu - PT / INR" or "Dilshad 159 - CBC Emergency"
+    let textSummary = captionsList.join('\n');
+
+    for (const [url, data] of selectedFeedPages.entries()) {
       const response = await fetch(url);
       const blob = await response.blob();
-      const file = new File([blob], `Batch_P${pageNum}_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const file = new File([blob], `Report_${Date.now()}.jpg`, { type: 'image/jpeg' });
       fileArray.push(file);
     }
 
@@ -770,8 +824,8 @@ async function shareSelectedFeedPages(){
         files: fileArray
       });
     } else {
-      let fallbackText = "";
-      selectedFeedPages.forEach((pageNum, url) => {
+      let fallbackText = textSummary ? textSummary + "\n\n" : "";
+      selectedFeedPages.forEach((data, url) => {
         fallbackText += `${url}\n`;
       });
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fallbackText)}`, '_blank');
@@ -841,14 +895,13 @@ function stopCamera() {
   document.getElementById('cameraModal').classList.remove('active');
 }
 
-// Optimized HD Compression: preserves document readability while drastically shrinking size
 function compressBase64(dataUrl) {
   return new Promise(resolve => {
     const img = new Image();
     img.src = dataUrl;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_DIM = 2200; // High resolution ceiling for sharp text on zoom
+      const MAX_DIM = 2200;
       let width = img.width, height = img.height;
       
       if (width > MAX_DIM || height > MAX_DIM) {
@@ -866,7 +919,7 @@ function compressBase64(dataUrl) {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.80)); // 0.80 JPEG quality balances crispness and fast transfer speed
+      resolve(canvas.toDataURL('image/jpeg', 0.80));
     };
   });
 }
@@ -913,7 +966,7 @@ function renderThumbnailTray() {
 }
 
 // ==========================================
-// UPLOAD WITH LIVE PROGRESS COUNTER (e.g. 4/25)
+// UPLOAD WITH LIVE PROGRESS COUNTER
 // ==========================================
 async function uploadBatchDirect() {
   if (!capturedImages.length) return alert("Capture or select photos first!");
@@ -931,7 +984,6 @@ async function uploadBatchDirect() {
   try {
     statusText.innerText = `⚡ Uploading page 1/${totalImages}...`;
     
-    // Virtual step animation to indicate multi-page progress to the user
     let stepCount = 1;
     const progressInterval = setInterval(() => {
       if (stepCount < totalImages) {
