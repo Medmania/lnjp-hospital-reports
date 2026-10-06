@@ -11,7 +11,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LNJP LabHub">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
+  <!-- Clinical Medical Icon -->
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3004/3004458.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +24,9 @@
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
+  <!-- Standalone User Guide Script -->
+  <script src="./guide.js"></script>
+
   <style>
     :root{--primary:#0284c7;--primary-hover:#0369a1;--primary-light:#e0f2fe;--bg:#f8fafc;--surface:#ffffff;--surface-border:#e2e8f0;--text-main:#0f172a;--text-muted:#64748b;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:12px;--shadow:0 4px 6px -1px rgb(0 0 0 / 0.07),0 2px 4px -2px rgb(0 0 0 / 0.05)}
     [data-theme="dark"]{--primary:#38bdf8;--primary-hover:#0ea5e9;--primary-light:#1e293b;--bg:#0b0f19;--surface:#111827;--surface-border:#1f2937;--text-main:#f8fafc;--text-muted:#94a3b8;--shadow:0 4px 10px rgb(0 0 0 / 0.3)}
@@ -32,8 +36,9 @@
     .nav-container{max-width:1000px;margin:0 auto;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
     .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem;color:var(--primary)}
     .user-actions{display:flex;align-items:center;gap:8px}
-    .theme-toggle,.btn-logout,.btn-install-pwa{background:var(--bg);border:1px solid var(--surface-border);color:var(--text-main);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+    .theme-toggle,.btn-logout,.btn-install-pwa,.btn-guide{background:var(--bg);border:1px solid var(--surface-border);color:var(--text-main);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
     .btn-install-pwa{background:var(--primary-light);color:var(--primary);border-color:var(--primary);}
+    .btn-guide{background:var(--primary-light);color:var(--primary);border-color:var(--primary);}
     .container{max-width:1000px;margin:20px auto;padding:0 16px}
     .auth-card{max-width:450px;margin:60px auto;background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius);padding:30px;text-align:center;box-shadow:var(--shadow)}
     .auth-title{font-size:1.3rem;font-weight:700;color:var(--primary);margin-bottom:8px}
@@ -120,9 +125,10 @@
 <body>
   <header>
     <div class="nav-container">
-      <div class="brand"><i class="fa-solid fa-hospital-user"></i><span>LNJP LabHub</span></div>
+      <div class="brand"><i class="fa-solid fa-microscope"></i><span>LNJP LabHub</span></div>
       <div class="user-actions">
-        <button class="btn-install-pwa" id="btnInstallPWA" style="display:none;" onclick="triggerPwaInstall()"><i class="fa-solid fa-download"></i> Install App</button>
+        <button class="btn-guide" onclick="openGuideModal()"><i class="fa-solid fa-circle-question"></i> Guide</button>
+        <button class="btn-install-pwa" id="btnInstallPWA" style="display:none;" onclick="triggerPwaInstall()"><i class="fa-solid fa-download"></i> Install</button>
         <span id="navUserInfo" style="font-size:13px;font-weight:600;color:var(--text-muted);display:none;"></span>
         <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
         <button class="btn-logout" id="btnLogout" style="display:none;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
@@ -185,7 +191,7 @@
             <input type="date" id="datePicker" style="padding:6px 10px;border-radius:8px;border:1px solid var(--surface-border);background:var(--bg);color:var(--text-main);font-size:13px;font-weight:600;" onchange="setDateFilter(this.value,null)">
             <button class="chip" onclick="clearDateFilter()" style="margin-left:4px;">Clear</button>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;justify-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
             <span id="resultsCount" style="font-size:13px;font-weight:600;color:var(--text-muted);">Loading batches...</span>
             <button class="theme-toggle" onclick="fetchDatabase(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
           </div>
@@ -216,8 +222,8 @@
           </div>
 
           <div class="form-group">
-            <label>Batch Title / Serial Range (e.g., "1-300", "Routine CBC 120-250"):</label>
-            <input type="text" id="batchDescription" placeholder="e.g. 1-300">
+            <label style="color:var(--danger);">Batch Title / Serial Range (Compulsory *):</label>
+            <input type="text" id="batchDescription" placeholder="e.g. 1-300 or Emergency CBC Batch 1" required>
           </div>
 
           <div class="upload-zone-container">
@@ -349,6 +355,23 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW reg error:', err));
   });
+}
+
+// ==========================================
+// HARDWARE BACK BUTTON MODAL CLOSE INTERCEPTOR
+// ==========================================
+window.addEventListener('popstate', (e) => {
+  const activeModal = document.querySelector('.modal.active');
+  if (activeModal) {
+    activeModal.classList.remove('active');
+    if (activeModal.id === 'cameraModal') stopCamera(false);
+  }
+});
+
+function pushModalState(modalId) {
+  if (window.history.state?.modal !== modalId) {
+    window.history.pushState({ modal: modalId }, '');
+  }
 }
 
 // ==========================================
@@ -625,6 +648,7 @@ function openEditModal(rowIndex){
   document.getElementById('editRowIndex').value = rowIndex;
   document.getElementById('editDescription').value = record.description || '';
   document.getElementById('editModal').classList.add('active');
+  pushModalState('editModal');
 }
 
 function closeEditModal(){
@@ -705,6 +729,7 @@ function openGalleryModal(batch){
   });
 
   document.getElementById('galleryModal').classList.add('active');
+  pushModalState('galleryModal');
 
   if (swiperInstance) swiperInstance.destroy(true, true);
 
@@ -786,7 +811,7 @@ function closeGalleryModal() {
 }
 
 // ==========================================
-// CLEAN IMAGE SHARING WITH AUTO CATEGORY TAGGING
+// CLEAN WHATSAPP SHARING WITH EXACT CATEGORY SUFFIX
 // ==========================================
 async function shareSelectedFeedPages(){
   if(!selectedFeedPages.size) return alert("Select at least one page to share!");
@@ -808,7 +833,6 @@ async function shareSelectedFeedPages(){
       }
     });
 
-    // Formats cleanly as "Manu - PT / INR" or "Dilshad 159 - CBC Emergency"
     let textSummary = captionsList.join('\n');
 
     for (const [url, data] of selectedFeedPages.entries()) {
@@ -851,6 +875,7 @@ async function startHDCamera() {
     });
     video.srcObject = mediaStream;
     document.getElementById('cameraModal').classList.add('active');
+    pushModalState('cameraModal');
     updateCameraUI();
   } catch (err) { alert("Camera unavailable."); }
 }
@@ -890,7 +915,7 @@ function updateCameraUI() {
   miniTray.scrollLeft = miniTray.scrollWidth;
 }
 
-function stopCamera() {
+function stopCamera(popHistory = true) {
   if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
   document.getElementById('cameraModal').classList.remove('active');
 }
@@ -966,7 +991,7 @@ function renderThumbnailTray() {
 }
 
 // ==========================================
-// UPLOAD WITH LIVE PROGRESS COUNTER
+// UPLOAD WITH COMPULSORY DESCRIPTION CHECK
 // ==========================================
 async function uploadBatchDirect() {
   if (!capturedImages.length) return alert("Capture or select photos first!");
@@ -974,7 +999,16 @@ async function uploadBatchDirect() {
   const windowType = document.getElementById('uploadWindowType').value;
   const registerCategory = document.getElementById('uploadRegisterCategory').value;
   const selectedDate = document.getElementById('uploadDate').value;
-  const description = document.getElementById('batchDescription').value.trim() || "Routine Batch";
+  const descriptionInput = document.getElementById('batchDescription');
+  const description = descriptionInput.value.trim();
+
+  // Compulsory Check
+  if (!description) {
+    alert("Please enter a Batch Title / Serial Range (e.g., '1-300' or 'Emergency CBC').");
+    descriptionInput.focus();
+    return;
+  }
+
   const statusText = document.getElementById('uploadStatusText');
   const btn = document.getElementById('btnUpload');
 
@@ -1010,7 +1044,7 @@ async function uploadBatchDirect() {
     if (res.status === "success") {
       statusText.innerText = `✅ Upload complete! (${totalImages}/${totalImages} pages saved)`;
       capturedImages = [];
-      document.getElementById('batchDescription').value = "";
+      descriptionInput.value = "";
       renderThumbnailTray();
       setTimeout(() => {
         statusText.innerText = "";
