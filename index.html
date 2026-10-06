@@ -86,8 +86,11 @@
     .gallery-footer{padding:12px 16px;background:rgba(0,0,0,0.92);color:#fff;display:flex;flex-direction:column;gap:10px;z-index:10;}
     
     .swiper{width:100%;height:calc(100vh - 210px);}
-    .swiper-slide{display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    .swiper-slide{display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;background:#000;}
     .swiper-slide img{max-width:100%;max-height:100%;object-fit:contain;}
+
+    /* Image Loading Spinner Overlay */
+    .swiper-slide .img-loader{position:absolute;color:var(--primary);font-size:2rem;z-index:1;}
 
     .swiper-scrollbar{background:rgba(255,255,255,0.2) !important;height:8px !important;border-radius:4px !important;position:relative !important;width:100% !important;margin:2px 0 !important;cursor:pointer;}
     .swiper-scrollbar-drag{background:var(--primary) !important;border-radius:4px !important;}
@@ -146,11 +149,16 @@
       </button>
     </div>
     
+    <!-- ONBOARDING FORM WITH POPULATED DEPARTMENTS -->
     <div id="view-onboarding" class="auth-card" style="display:none;">
       <h2 class="auth-title">Complete Your Profile</h2>
       <p class="auth-desc">Please provide your hospital posting details for account verification.</p>
-      <div class="form-group"><label>Full Name:</label><input type="text" id="regFullName" placeholder="Dr. Name"></div>
-      <div class="form-group"><label>Designation:</label>
+      <div class="form-group">
+        <label>Full Name:</label>
+        <input type="text" id="regFullName" placeholder="Dr. Name">
+      </div>
+      <div class="form-group">
+        <label>Designation:</label>
         <select id="regDesignation">
           <option value="Intern">Intern / Duty Doctor</option>
           <option value="Junior Resident">Junior Resident (JR)</option>
@@ -160,8 +168,21 @@
           <option value="Lab Technician">Lab Technician</option>
         </select>
       </div>
-      <div class="form-group"><label>Primary Department / Unit:</label><select id="regDepartment"></select></div>
-      <button class="btn-submit" onclick="submitProfile()"><i class="fa-solid fa-paper-plane"></i> Submit for Approval</button>
+      <div class="form-group">
+        <label>Primary Department / Unit:</label>
+        <select id="regDepartment">
+          <option value="General Medicine">General Medicine</option>
+          <option value="General Surgery">General Surgery</option>
+          <option value="Pediatrics">Pediatrics</option>
+          <option value="Obstetrics & Gynecology">Obstetrics & Gynecology</option>
+          <option value="Orthopedics">Orthopedics</option>
+          <option value="Casualty / Emergency">Casualty / Emergency</option>
+          <option value="ICU / Anesthesia">ICU / Anesthesia</option>
+          <option value="Pathology / Lab">Pathology / Lab</option>
+          <option value="Biochemistry">Biochemistry</option>
+        </select>
+      </div>
+      <button class="btn-submit" id="btnSubmitProfile" onclick="submitProfile()"><i class="fa-solid fa-paper-plane"></i> Submit for Approval</button>
     </div>
 
     <div id="view-pending" class="auth-card" style="display:none;">
@@ -191,7 +212,7 @@
             <input type="date" id="datePicker" style="padding:6px 10px;border-radius:8px;border:1px solid var(--surface-border);background:var(--bg);color:var(--text-main);font-size:13px;font-weight:600;" onchange="setDateFilter(this.value,null)">
             <button class="chip" onclick="clearDateFilter()" style="margin-left:4px;">Clear</button>
           </div>
-          <div style="display:flex;justify-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
             <span id="resultsCount" style="font-size:13px;font-weight:600;color:var(--text-muted);">Loading batches...</span>
             <button class="theme-toggle" onclick="fetchDatabase(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
           </div>
@@ -429,12 +450,63 @@ async function checkUserSession(){
     const{data:{session},error:sessionError}=await _supabaseClient.auth.getSession();
     if(sessionError||!session){showView('view-login');return;}
     currentUser=session.user;
+    
+    // Auto populate email/name into profile if available
+    const userMeta = currentUser.user_metadata || {};
+    if(userMeta.full_name && document.getElementById('regFullName')) {
+      document.getElementById('regFullName').value = userMeta.full_name;
+    }
+
     const{data:profile}=await _supabaseClient.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
     if(!profile){showView('view-onboarding');return;}
     currentProfile=profile;
     if(profile.status==='pending'){showView('view-pending');return;}
     setupMainApp();
   }catch(e){showView('view-login');}
+}
+
+// ==========================================
+// FIXED PROFILE SUBMISSION FOR NEW USERS
+// ==========================================
+async function submitProfile() {
+  const fullName = document.getElementById('regFullName')?.value.trim();
+  const designation = document.getElementById('regDesignation')?.value;
+  const department = document.getElementById('regDepartment')?.value;
+  const btn = document.getElementById('btnSubmitProfile');
+
+  if (!fullName) return alert("Please enter your full name.");
+  if (!department) return alert("Please select your department.");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting...`;
+  }
+
+  try {
+    const profilePayload = {
+      id: currentUser.id,
+      email: currentUser.email,
+      full_name: fullName,
+      designation: designation,
+      department: department,
+      status: 'pending',
+      role: 'viewer',
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await _supabaseClient.from('profiles').upsert(profilePayload);
+    if (error) throw error;
+
+    currentProfile = profilePayload;
+    showView('view-pending');
+  } catch (err) {
+    alert("Profile submission failed: " + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Submit for Approval`;
+    }
+  }
 }
 
 function showView(viewId){
@@ -557,18 +629,17 @@ async function fetchDatabase(manual = false) {
       const data = await response.json();
       rawRecords = Array.isArray(data) ? data : [];
       applyFilters();
-      return; // success → exit
+      return;
     } catch (err) {
       lastError = err;
       console.warn(`Fetch attempt ${attempt} failed:`, err.message);
       if (attempt < maxRetries) {
         countLabel.innerText = `Retrying... (${attempt}/${maxRetries})`;
-        await new Promise(r => setTimeout(r, 800 * attempt)); // wait before retry
+        await new Promise(r => setTimeout(r, 800 * attempt));
       }
     }
   }
 
-  // All retries failed
   countLabel.innerText = "Error syncing data. Tap Refresh.";
 }
 
@@ -714,6 +785,9 @@ async function deleteBatchRecord(rowIndex, desc){
   }
 }
 
+// ==========================================
+// OPTIMIZED FAST LAZY-LOADING GALLERY VIEWER
+// ==========================================
 function openGalleryModal(batch){
   activeFeedBatch = batch;
   selectedFeedPages.clear();
@@ -738,9 +812,11 @@ function openGalleryModal(batch){
     slide.dataset.url = directUrl;
     slide.dataset.page = idx + 1;
     
+    // Add loading indicator and lazy image tag
     slide.innerHTML = `
+      <i class="fa-solid fa-spinner fa-spin img-loader"></i>
       <div class="swiper-zoom-container">
-        <img src="${directUrl}" loading="lazy">
+        <img data-src="${directUrl}" class="swiper-lazy" onload="this.previousElementSibling.style.display='none'">
       </div>
     `;
     wrapper.appendChild(slide);
@@ -752,6 +828,11 @@ function openGalleryModal(batch){
   if (swiperInstance) swiperInstance.destroy(true, true);
 
   swiperInstance = new Swiper('.mySwiper', {
+    lazy: {
+      loadPrevNext: true,
+      loadPrevNextAmount: 2
+    },
+    preloadImages: false,
     zoom: { maxRatio: 4, minRatio: 1, toggle: true },
     navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
     scrollbar: { el: '.swiper-scrollbar', draggable: true, snapOnRelease: true },
@@ -838,7 +919,6 @@ async function shareSelectedFeedPages() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing Photos...`;
 
-  // Short tags for WhatsApp captions
   const CATEGORY_SHORT_TAGS = {
     "CBC Emergency": "cbc em",
     "CBC Routine": "Cbc routine",
@@ -1029,7 +1109,6 @@ async function uploadBatchDirect() {
   const descriptionInput = document.getElementById('batchDescription');
   const description = descriptionInput.value.trim();
 
-  // Compulsory Check
   if (!description) {
     alert("Please enter a Batch Title / Serial Range (e.g., '1-300' or 'Emergency CBC').");
     descriptionInput.focus();
@@ -1045,7 +1124,6 @@ async function uploadBatchDirect() {
   statusText.style.color = "var(--primary)";
 
   try {
-    // Fake progress just for user feedback (real upload is one big request)
     let step = 1;
     const progressInterval = setInterval(() => {
       if (step < totalImages) {
@@ -1079,7 +1157,6 @@ async function uploadBatchDirect() {
       descriptionInput.value = "";
       renderThumbnailTray();
 
-      // Keep success message visible for 1.8 seconds so user can see it
       setTimeout(() => {
         statusText.innerText = "";
         statusText.style.color = "";
