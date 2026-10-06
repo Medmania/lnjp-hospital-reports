@@ -201,7 +201,10 @@
 
       <div id="tab-search" class="panel active">
         <div class="card">
-          <input type="text" id="liveSearchInput" class="search-input" placeholder="Search by batch description (e.g. Cbc em 1-300)..." oninput="applyFilters()">
+          <div style="position:relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:14px;top:16px;color:var(--text-muted);"></i>
+            <input type="text" id="liveSearchInput" class="search-input" placeholder="Search by batch description (e.g. Cbc em 1-300)..." oninput="applyFilters()">
+          </div>
           
           <div class="filter-chips" id="windowChips"><span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Window:</span></div>
           <div class="filter-chips" id="categoryChips" style="margin-top:6px;"><span style="font-size:12px;font-weight:bold;color:var(--text-muted);">Register:</span></div>
@@ -465,9 +468,6 @@ async function checkUserSession(){
   }catch(e){showView('view-login');}
 }
 
-// ==========================================
-// FIXED PROFILE SUBMISSION FOR NEW USERS
-// ==========================================
 async function submitProfile() {
   const fullName = document.getElementById('regFullName')?.value.trim();
   const designation = document.getElementById('regDesignation')?.value;
@@ -612,7 +612,14 @@ function switchTab(tab){
 
 function toggleTheme(){
   const isDark=document.body.getAttribute('data-theme')==='dark';
-  document.body.setAttribute('data-theme',isDark?'light':'dark');
+  const icon=document.getElementById('themeIcon');
+  if(isDark){
+    document.body.removeAttribute('data-theme');
+    if(icon) icon.className="fa-solid fa-moon";
+  }else{
+    document.body.setAttribute('data-theme','dark');
+    if(icon) icon.className="fa-solid fa-sun";
+  }
 }
 
 async function fetchDatabase(manual = false) {
@@ -620,7 +627,6 @@ async function fetchDatabase(manual = false) {
   if (manual) countLabel.innerText = "Syncing...";
 
   const maxRetries = 3;
-  let lastError = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -631,7 +637,6 @@ async function fetchDatabase(manual = false) {
       applyFilters();
       return;
     } catch (err) {
-      lastError = err;
       console.warn(`Fetch attempt ${attempt} failed:`, err.message);
       if (attempt < maxRetries) {
         countLabel.innerText = `Retrying... (${attempt}/${maxRetries})`;
@@ -659,7 +664,14 @@ function setCategoryFilter(cat,el){
   applyFilters();
 }
 
-function setDateFilter(dateValue,el){activeDateFilter=dateValue;if(dateValue==='ALL'){document.getElementById('dateChipAll').classList.add('active');document.getElementById('datePicker').value='';}else document.getElementById('dateChipAll').classList.remove('active');applyFilters();}
+function setDateFilter(dateValue,el){
+  activeDateFilter=dateValue;
+  if(dateValue==='ALL'){
+    document.getElementById('dateChipAll').classList.add('active');
+    document.getElementById('datePicker').value='';
+  }else document.getElementById('dateChipAll').classList.remove('active');
+  applyFilters();
+}
 function clearDateFilter(){setDateFilter('ALL',null);}
 
 function applyFilters(){
@@ -812,7 +824,6 @@ function openGalleryModal(batch){
     slide.dataset.url = directUrl;
     slide.dataset.page = idx + 1;
     
-    // Add loading indicator and lazy image tag
     slide.innerHTML = `
       <i class="fa-solid fa-spinner fa-spin img-loader"></i>
       <div class="swiper-zoom-container">
@@ -942,15 +953,16 @@ async function shareSelectedFeedPages() {
 
     let textSummary = captionsList.join('\n');
 
-    for (const [url, data] of selectedFeedPages.entries()) {
+    for (const [url] of selectedFeedPages.entries()) {
       const response = await fetch(url);
       const blob = await response.blob();
-      const file = new File([blob], `Report_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const file = new File([blob], `LNJP_LabReport_${Date.now()}.jpg`, { type: 'image/jpeg' });
       fileArray.push(file);
     }
 
     if (navigator.canShare && navigator.canShare({ files: fileArray })) {
       await navigator.share({
+        title: "LNJP Lab Reports",
         text: textSummary,
         files: fileArray
       });
