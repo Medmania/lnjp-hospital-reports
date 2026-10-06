@@ -543,15 +543,33 @@ function toggleTheme(){
   document.body.setAttribute('data-theme',isDark?'light':'dark');
 }
 
-async function fetchDatabase(manual=false){
-  const countLabel=document.getElementById('resultsCount');
-  if(manual)countLabel.innerText="Syncing...";
-  try{
-    const response=await fetch(SCRIPT_URL+"?t="+Date.now());
-    const data=await response.json();
-    rawRecords=Array.isArray(data)?data:[];
-    applyFilters();
-  }catch(err){countLabel.innerText="Error syncing data.";}
+async function fetchDatabase(manual = false) {
+  const countLabel = document.getElementById('resultsCount');
+  if (manual) countLabel.innerText = "Syncing...";
+
+  const maxRetries = 3;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(SCRIPT_URL + "?t=" + Date.now());
+      if (!response.ok) throw new Error("Network response was not ok");
+      const data = await response.json();
+      rawRecords = Array.isArray(data) ? data : [];
+      applyFilters();
+      return; // success → exit
+    } catch (err) {
+      lastError = err;
+      console.warn(`Fetch attempt ${attempt} failed:`, err.message);
+      if (attempt < maxRetries) {
+        countLabel.innerText = `Retrying... (${attempt}/${maxRetries})`;
+        await new Promise(r => setTimeout(r, 800 * attempt)); // wait before retry
+      }
+    }
+  }
+
+  // All retries failed
+  countLabel.innerText = "Error syncing data. Tap Refresh.";
 }
 
 function setWindowFilter(win,el){
@@ -813,23 +831,32 @@ function closeGalleryModal() {
 // ==========================================
 // CLEAN WHATSAPP SHARING WITH EXACT CATEGORY SUFFIX
 // ==========================================
-async function shareSelectedFeedPages(){
-  if(!selectedFeedPages.size) return alert("Select at least one page to share!");
+async function shareSelectedFeedPages() {
+  if (!selectedFeedPages.size) return alert("Select at least one page to share!");
 
   const btn = document.getElementById('btnShareNative');
   btn.disabled = true;
   btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing Photos...`;
 
+  // Short tags for WhatsApp captions
+  const CATEGORY_SHORT_TAGS = {
+    "CBC Emergency": "cbc em",
+    "CBC Routine": "Cbc routine",
+    "BUSE / LFT / KFT": "Buse Lft Kft",
+    "PT / INR": "Pt Inr"
+  };
+
   try {
     const fileArray = [];
-    const categoryTag = activeFeedBatch?.category || "Lab Report";
-    
+    const rawCategory = activeFeedBatch?.category || "Lab Report";
+    const shortTag = CATEGORY_SHORT_TAGS[rawCategory] || rawCategory;
+
     let captionsList = [];
     selectedFeedPages.forEach((data) => {
       if (data.patientName) {
-        captionsList.push(`${data.patientName} - ${categoryTag}`);
+        captionsList.push(`${data.patientName} - Pt ${shortTag}`);
       } else {
-        captionsList.push(`${categoryTag}`);
+        captionsList.push(`Pt ${shortTag}`);
       }
     });
 
@@ -1011,20 +1038,23 @@ async function uploadBatchDirect() {
 
   const statusText = document.getElementById('uploadStatusText');
   const btn = document.getElementById('btnUpload');
-
   const totalImages = capturedImages.length;
+
   btn.disabled = true;
+  statusText.innerText = `⚡ Uploading ${totalImages} page(s)... Please wait`;
+  statusText.style.color = "var(--primary)";
 
   try {
-    statusText.innerText = `⚡ Uploading page 1/${totalImages}...`;
-    
-    let stepCount = 1;
+    // Fake progress just for user feedback (real upload is one big request)
+    let step = 1;
     const progressInterval = setInterval(() => {
-      if (stepCount < totalImages) {
-        stepCount++;
-        statusText.innerText = `⚡ Uploading page ${stepCount}/${totalImages}...`;
+      if (step < totalImages) {
+        step++;
+        statusText.innerText = `⚡ Uploading page ${step}/${totalImages}...`;
+      } else {
+        statusText.innerText = `⏳ Saving to server... Please wait`;
       }
-    }, 600);
+    }, 700);
 
     const response = await fetch(SCRIPT_URL, {
       method: "POST",
@@ -1039,25 +1069,32 @@ async function uploadBatchDirect() {
     });
 
     clearInterval(progressInterval);
+
     const res = await response.json();
-    
+
     if (res.status === "success") {
-      statusText.innerText = `✅ Upload complete! (${totalImages}/${totalImages} pages saved)`;
+      statusText.innerText = `✅ Upload complete! (${totalImages} pages saved)`;
+      statusText.style.color = "var(--success)";
       capturedImages = [];
       descriptionInput.value = "";
       renderThumbnailTray();
+
+      // Keep success message visible for 1.8 seconds so user can see it
       setTimeout(() => {
         statusText.innerText = "";
+        statusText.style.color = "";
         switchTab('search');
         fetchDatabase(true);
-      }, 1200);
+      }, 1800);
     } else {
-      alert("Upload failed: " + res.message);
+      alert("Upload failed: " + (res.message || "Unknown error"));
       statusText.innerText = "❌ Upload failed.";
+      statusText.style.color = "var(--danger)";
     }
   } catch (err) {
     alert("Upload failed: " + err.message);
-    statusText.innerText = "❌ Upload failed.";
+    statusText.innerText = "❌ Upload failed. Check internet & try again.";
+    statusText.style.color = "var(--danger)";
   } finally {
     btn.disabled = false;
   }
