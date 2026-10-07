@@ -191,7 +191,7 @@
             <input type="date" id="datePicker" style="padding:6px 10px;border-radius:8px;border:1px solid var(--surface-border);background:var(--bg);color:var(--text-main);font-size:13px;font-weight:600;" onchange="setDateFilter(this.value,null)">
             <button class="chip" onclick="clearDateFilter()" style="margin-left:4px;">Clear</button>
           </div>
-          <div style="display:flex;justify-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
             <span id="resultsCount" style="font-size:13px;font-weight:600;color:var(--text-muted);">Loading batches...</span>
             <button class="theme-toggle" onclick="fetchDatabase(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
           </div>
@@ -579,10 +579,23 @@ function applyFilters(){
   
   const filtered=rawRecords.filter(r=>{
     const descStr=String(r.description||'').toLowerCase();
-    const catStr=String(r.category||'').toLowerCase();
+    const catStr=String(r.category||'').toLowerCase().replace(/\s+/g, '');
     const matchQuery=!query||descStr.includes(query)||catStr.includes(query);
     const matchWindow=(activeWindowFilter==='ALL')||(String(r.windowType||'')===activeWindowFilter);
-    const matchCategory=(activeCategoryFilter==='ALL')||(String(r.category||'')===activeCategoryFilter);
+    
+    // Flexible category matching (handles whitespace, sub-tokens like BUSE, LFT, KFT, etc.)
+    let matchCategory = false;
+    if (activeCategoryFilter === 'ALL') {
+      matchCategory = true;
+    } else {
+      const activeCatNormalized = activeCategoryFilter.toLowerCase().replace(/\s+/g, '');
+      if (catStr === activeCatNormalized || catStr.includes(activeCatNormalized) || activeCatNormalized.includes(catStr)) {
+        matchCategory = true;
+      } else {
+        const tokens = activeCategoryFilter.toLowerCase().split(/[\/\s]+/).filter(Boolean);
+        matchCategory = tokens.some(tok => catStr.includes(tok) || descStr.includes(tok));
+      }
+    }
     
     let matchDate=true;
     if(activeDateFilter!=='ALL' && r.date){
