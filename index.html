@@ -835,14 +835,20 @@ async function shareSelectedFeedPages(){
 
   try {
     const fileArray = [];
-    const categoryTag = activeFeedBatch?.category || "Lab Report";
+    
+    // Retrieve category cleanly; fallback to empty string if not defined so no unwanted text is added
+    const categoryTag = (activeFeedBatch && activeFeedBatch.category) ? activeFeedBatch.category.trim() : "";
     
     let captionsList = [];
     selectedFeedPages.forEach((data) => {
-      if (data.patientName) {
-        captionsList.push(`${data.patientName} - ${categoryTag}`);
-      } else {
-        captionsList.push(`${categoryTag}`);
+      const pName = (data.patientName || "").trim();
+      
+      if (pName && categoryTag) {
+        captionsList.push(`${pName} - ${categoryTag}`);
+      } else if (pName) {
+        captionsList.push(pName);
+      } else if (categoryTag) {
+        captionsList.push(categoryTag);
       }
     });
 
@@ -876,6 +882,7 @@ async function shareSelectedFeedPages(){
     btn.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Share Photos (<span id="gallerySelectedCount">${selectedFeedPages.size}</span>)`;
   }
 }
+
 
 // ==========================================
 // SMART CAMERA INTERFACE WITH FLASH & LIVE TRAY
