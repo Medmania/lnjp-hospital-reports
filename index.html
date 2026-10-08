@@ -563,76 +563,105 @@ function setWindowFilter(win,el){
   applyFilters();
 }
 
-function setCategoryFilter(cat,el){
-  activeCategoryFilter=cat;
-  document.querySelectorAll('#categoryChips .chip').forEach(c=>c.classList.remove('active'));
-  if(el)el.classList.add('active');
+function setCategoryFilter(cat, el) {
+  activeCategoryFilter = cat;
+  
+  // Cleanly toggle active class on category chips
+  const categoryChips = document.querySelectorAll('#categoryChips .chip');
+  categoryChips.forEach(chip => {
+    const chipText = chip.innerText.trim();
+    if (chipText.toLowerCase() === cat.toLowerCase() || (cat === 'ALL' && chipText.toLowerCase() === 'all')) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+
   applyFilters();
 }
 
-function setDateFilter(dateValue,el){activeDateFilter=dateValue;if(dateValue==='ALL'){document.getElementById('dateChipAll').classList.add('active');document.getElementById('datePicker').value='';}else document.getElementById('dateChipAll').classList.remove('active');applyFilters();}
-function clearDateFilter(){setDateFilter('ALL',null);}
-
-function applyFilters(){
-  const query=String(document.getElementById('liveSearchInput').value||'').toLowerCase().trim();
-  const grid=document.getElementById('resultsGrid'),countLabel=document.getElementById('resultsCount');
+function applyFilters() {
+  const query = String(document.getElementById('liveSearchInput').value || '').toLowerCase().trim();
+  const grid = document.getElementById('resultsGrid'), countLabel = document.getElementById('resultsCount');
   
-  const filtered=rawRecords.filter(r=>{
-    const descStr=String(r.description||'').toLowerCase();
-    const catStr=String(r.category||'').toLowerCase().replace(/\s+/g, '');
-    const matchQuery=!query||descStr.includes(query)||catStr.includes(query);
-    const matchWindow=(activeWindowFilter==='ALL')||(String(r.windowType||'')===activeWindowFilter);
+  const filtered = rawRecords.filter(r => {
+    // 1. Normalize data fields across potential backend key variations
+    const descStr = String(r.description || r.title || '').toLowerCase().trim();
+    const catRaw = String(r.category || r.Register || r.register || r.categoryName || '').trim();
+    const catStr = catRaw.toLowerCase();
     
-    // Flexible category matching (handles whitespace, sub-tokens like BUSE, LFT, KFT, etc.)
+    // 2. Search Query Filter
+    const matchQuery = !query || descStr.includes(query) || catStr.includes(query);
+    
+    // 3. Window Filter
+    const matchWindow = (activeWindowFilter === 'ALL') || (String(r.windowType || r.window || '') === activeWindowFilter);
+    
+    // 4. Strict Category Filter Logic
     let matchCategory = false;
     if (activeCategoryFilter === 'ALL') {
       matchCategory = true;
-    } else {
+    } else if (catStr !== '') {
+      // Record has an explicit category -> Match ONLY against catStr
       const activeCatNormalized = activeCategoryFilter.toLowerCase().replace(/\s+/g, '');
-      if (catStr === activeCatNormalized || catStr.includes(activeCatNormalized) || activeCatNormalized.includes(catStr)) {
+      const recordCatNormalized = catStr.replace(/\s+/g, '');
+      
+      if (recordCatNormalized === activeCatNormalized || recordCatNormalized.includes(activeCatNormalized) || activeCatNormalized.includes(recordCatNormalized)) {
         matchCategory = true;
       } else {
-        const tokens = activeCategoryFilter.toLowerCase().split(/[\/\s]+/).filter(Boolean);
-        matchCategory = tokens.some(tok => catStr.includes(tok) || descStr.includes(tok));
+        const activeTokens = activeCategoryFilter.toLowerCase().split(/[\/\s]+/).filter(Boolean);
+        const recordTokens = catStr.split(/[\/\s]+/).filter(Boolean);
+        matchCategory = activeTokens.some(tok => recordTokens.includes(tok));
       }
+    } else {
+      // Legacy Record Fallback (No category set in sheet) -> Match EXACT word boundaries in description only
+      const activeTokens = activeCategoryFilter.toLowerCase().split(/[\/\s]+/).filter(Boolean);
+      matchCategory = activeTokens.some(tok => {
+        // Escape regex characters and enforce whole word boundaries (\b)
+        const safeTok = tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${safeTok}\\b`, 'i');
+        return regex.test(descStr);
+      });
     }
     
-    let matchDate=true;
-    if(activeDateFilter!=='ALL' && r.date){
-      matchDate=(formatDateDisplay(r.date)===activeDateFilter);
+    // 5. Date Filter
+    let matchDate = true;
+    if (activeDateFilter !== 'ALL' && r.date) {
+      matchDate = (formatDateDisplay(r.date) === activeDateFilter);
     }
-    return matchQuery&&matchWindow&&matchCategory&&matchDate;
+
+    return matchQuery && matchWindow && matchCategory && matchDate;
   });
 
-  countLabel.innerText=`${filtered.length} batch(es) found (Newest First)`;
-  grid.innerHTML="";
+  countLabel.innerText = `${filtered.length} batch(es) found (Newest First)`;
+  grid.innerHTML = "";
 
-  if(!filtered.length){
-    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No batches found.</div>`;
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No batches found.</div>`;
     return;
   }
 
   const isAdmin = currentProfile?.role === 'admin';
   const isEditorOrAdmin = isAdmin || currentProfile?.role === 'editor';
 
-  filtered.forEach(r=>{
-    let badgeClass=r.windowType==='Window 1'?'badge-w1':'badge-w2';
+  filtered.forEach(r => {
+    let badgeClass = (r.windowType || r.window) === 'Window 1' ? 'badge-w1' : 'badge-w2';
     const formattedDate = formatDateDisplay(r.date);
+    const categoryName = r.category || r.Register || r.register || '';
     
     let totalPages = 1;
     if (Array.isArray(r.imageUrls)) totalPages = r.imageUrls.length;
     else if (r.pageCount) totalPages = r.pageCount;
 
-    const card=document.createElement('div');
-    card.className='result-card';
+    const card = document.createElement('div');
+    card.className = 'result-card';
     
-    card.innerHTML=`
+    card.innerHTML = `
       <div>
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
-          <strong style="font-size:1.05rem;color:var(--primary);">${r.description||'Routine Log'}</strong>
+          <strong style="font-size:1.05rem;color:var(--primary);">${r.description || 'Routine Log'}</strong>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            <span class="badge ${badgeClass}">${r.windowType||'—'}</span>
-            ${r.category ? `<span class="badge badge-cat">${r.category}</span>` : ''}
+            <span class="badge ${badgeClass}">${r.windowType || r.window || '—'}</span>
+            ${categoryName ? `<span class="badge badge-cat">${categoryName}</span>` : ''}
           </div>
         </div>
         <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">📅 Date: <span style="color:var(--text-main);font-weight:600;">${formattedDate}</span></div>
@@ -643,12 +672,13 @@ function applyFilters(){
       
       <div style="display:flex;gap:6px;margin-top:4px;">
         ${isEditorOrAdmin ? `<button class="btn-action btn-edit" style="flex:1;" onclick="openEditModal(${r.rowIndex})"><i class="fa-solid fa-pen"></i> Edit Title</button>` : ''}
-        ${isAdmin ? `<button class="btn-action btn-del" onclick="deleteBatchRecord(${r.rowIndex}, '${String(r.description||'Batch').replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i> Delete</button>` : ''}
+        ${isAdmin ? `<button class="btn-action btn-del" onclick="deleteBatchRecord(${r.rowIndex}, '${String(r.description || 'Batch').replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i> Delete</button>` : ''}
       </div>
     `;
     grid.appendChild(card);
   });
 }
+
 
 function openGalleryModalByRow(rowIndex){
   const batch = rawRecords.find(r => r.rowIndex === rowIndex);
