@@ -853,55 +853,77 @@ function closeGalleryModal() {
   document.getElementById('galleryModal').classList.remove('active');
 }
 
-// ==========================================
-// CLEAN WHATSAPP SHARING WITH EXACT CATEGORY SUFFIX
-// ==========================================
 async function shareSelectedFeedPages(){
   if(!selectedFeedPages.size) return alert("Select at least one page to share!");
 
   const btn = document.getElementById('btnShareNative');
   btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing Photos...`;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Stamping Names...`;
 
   try {
     const fileArray = [];
-    
-    // Retrieve category cleanly; fallback to empty string if not defined so no unwanted text is added
     const categoryTag = (activeFeedBatch && activeFeedBatch.category) ? activeFeedBatch.category.trim() : "";
-    
-    let captionsList = [];
-    selectedFeedPages.forEach((data) => {
-      const pName = (data.patientName || "").trim();
-      
-      if (pName && categoryTag) {
-        captionsList.push(`${pName} - ${categoryTag}`);
-      } else if (pName) {
-        captionsList.push(pName);
-      } else if (categoryTag) {
-        captionsList.push(categoryTag);
-      }
-    });
-
-    let textSummary = captionsList.join('\n');
+    let fileIndex = 1;
 
     for (const [url, data] of selectedFeedPages.entries()) {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const file = new File([blob], `Report_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const pName = (data.patientName || "Unassigned").trim();
+      
+      // 1. Load image into HTML Image object
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      // 2. Create offscreen canvas matching original image dimensions
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+
+      // 3. Draw original image onto canvas
+      ctx.drawImage(img, 0, 0);
+
+      // 4. Calculate responsive banner height & font size based on image height
+      const bannerHeight = Math.max(60, Math.floor(img.height * 0.07));
+      const fontSize = Math.max(24, Math.floor(bannerHeight * 0.45));
+
+      // 5. Draw dark overlay banner at bottom
+      ctx.fillStyle = "rgba(15, 23, 42, 0.88)"; // Dark slate overlay
+      ctx.fillRect(0, img.height - bannerHeight, img.width, bannerHeight);
+
+      // 6. Draw accent border line above banner
+      ctx.fillStyle = "#2563eb"; // Blue accent line
+      ctx.fillRect(0, img.height - bannerHeight, img.width, Math.max(4, Math.floor(bannerHeight * 0.06)));
+
+      // 7. Stamp Patient Name text onto image
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+
+      const displayText = categoryTag ? `Pt: ${pName}  (${categoryTag})` : `Pt: ${pName}`;
+      const paddingLeft = Math.max(20, Math.floor(img.width * 0.03));
+      
+      ctx.fillText(displayText, paddingLeft, img.height - (bannerHeight / 2));
+
+      // 8. Convert canvas to Blob/File
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+      const file = new File([blob], `Report_Pt_${pName.replace(/\s+/g, '_')}_${fileIndex}.jpg`, { type: 'image/jpeg' });
+      
       fileArray.push(file);
+      fileIndex++;
     }
 
+    // 9. Share stamped files directly via WhatsApp
     if (navigator.canShare && navigator.canShare({ files: fileArray })) {
       await navigator.share({
-        text: textSummary,
         files: fileArray
       });
     } else {
-      let fallbackText = textSummary ? textSummary + "\n\n" : "";
-      selectedFeedPages.forEach((data, url) => {
-        fallbackText += `${url}\n`;
-      });
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fallbackText)}`, '_blank');
+      alert("Native image sharing is not supported on this browser.");
     }
   } catch (err) {
     if (err.name !== 'AbortError') {
@@ -912,6 +934,7 @@ async function shareSelectedFeedPages(){
     btn.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Share Photos (<span id="gallerySelectedCount">${selectedFeedPages.size}</span>)`;
   }
 }
+
 
 
 // ==========================================
