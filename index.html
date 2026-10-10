@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LNJP LabHub">
   <!-- Clinical Medical Icon -->
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3004/3004458.png">
-  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3004/3004458.png" type="image/png">
+  <link rel="apple-touch-icon" href="./logo.png">
+  <link rel="icon" href="./logo.png" type="image/png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -124,18 +124,21 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="nav-container">
-      <div class="brand"><i class="fa-solid fa-microscope"></i><span>LNJP LabHub</span></div>
-      <div class="user-actions">
-        <button class="btn-guide" onclick="openGuideModal()"><i class="fa-solid fa-circle-question"></i> Guide</button>
-        <button class="btn-install-pwa" id="btnInstallPWA" style="display:none;" onclick="triggerPwaInstall()"><i class="fa-solid fa-download"></i> Install</button>
-        <span id="navUserInfo" style="font-size:13px;font-weight:600;color:var(--text-muted);display:none;"></span>
-        <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
-        <button class="btn-logout" id="btnLogout" style="display:none;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
-      </div>
+<header>
+  <div class="nav-container">
+    <div class="brand">
+      <img src="./logo.png" alt="LNJP LabHub Logo" style="height: 36px; width: auto; object-fit: contain;">
+      <span>LNJP LabHub</span>
     </div>
-  </header>
+    <div class="user-actions">
+      <button class="btn-guide" onclick="openGuideModal()"><i class="fa-solid fa-circle-question"></i> Guide</button>
+      <button class="btn-install-pwa" id="btnInstallPWA" style="display:none;" onclick="triggerPwaInstall()"><i class="fa-solid fa-download"></i> Install</button>
+      <span id="navUserInfo" style="font-size:13px;font-weight:600;color:var(--text-muted);display:none;"></span>
+      <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
+      <button class="btn-logout" id="btnLogout" style="display:none;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+    </div>
+  </div>
+</header>
 
   <div class="container">
     <div id="view-login" class="auth-card">
