@@ -898,6 +898,7 @@ async function shareSelectedFeedPages(){
 
   try {
     const fileArray = [];
+    const captionLines = [];
     const categoryRaw = (activeFeedBatch && activeFeedBatch.category) ? activeFeedBatch.category : "";
     const categorySuffix = getCategorySuffix(categoryRaw);
     let fileIndex = 1;
@@ -906,7 +907,11 @@ async function shareSelectedFeedPages(){
       const rawName = (data.patientName || "").trim();
       const pName = rawName ? rawName : "Unassigned";
 
-      // 1. Load image into HTML Image object
+      // 1. Compile formatted text caption line for WhatsApp
+      const tagText = `Pt: ${pName}${categorySuffix}`;
+      captionLines.push(tagText);
+
+      // 2. Load image into HTML Image object
       const img = new Image();
       img.crossOrigin = "anonymous";
       await new Promise((resolve, reject) => {
@@ -915,39 +920,35 @@ async function shareSelectedFeedPages(){
         img.src = url;
       });
 
-      // 2. Create offscreen canvas matching original image dimensions
+      // 3. Canvas setup
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
 
-      // 3. Draw original image onto canvas
       ctx.drawImage(img, 0, 0);
 
-      // 4. Calculate responsive banner height & font size based on image height
       const bannerHeight = Math.max(60, Math.floor(img.height * 0.07));
       const fontSize = Math.max(24, Math.floor(bannerHeight * 0.45));
 
-      // 5. Draw dark overlay banner at bottom
-      ctx.fillStyle = "rgba(15, 23, 42, 0.88)"; // Dark slate overlay
+      // 4. Draw dark overlay banner at bottom
+      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
       ctx.fillRect(0, img.height - bannerHeight, img.width, bannerHeight);
 
-      // 6. Draw accent border line above banner
-      ctx.fillStyle = "#2563eb"; // Blue accent line
+      // Accent border
+      ctx.fillStyle = "#2563eb";
       ctx.fillRect(0, img.height - bannerHeight, img.width, Math.max(4, Math.floor(bannerHeight * 0.06)));
 
-      // 7. Stamp Patient Name + Category Suffix onto image
+      // 5. Stamp Patient Name + Category Suffix on bottom banner
       ctx.fillStyle = "#ffffff";
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
 
-      const displayText = `Pt: ${pName}${categorySuffix}`;
       const paddingLeft = Math.max(20, Math.floor(img.width * 0.03));
-      
-      ctx.fillText(displayText, paddingLeft, img.height - (bannerHeight / 2));
+      ctx.fillText(tagText, paddingLeft, img.height - (bannerHeight / 2));
 
-      // 8. Convert canvas to Blob/File
+      // 6. Convert canvas to File
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
       const safeFileName = `Report_Pt_${pName.replace(/\s+/g, '_')}_${fileIndex}.jpg`;
       const file = new File([blob], safeFileName, { type: 'image/jpeg' });
@@ -956,9 +957,16 @@ async function shareSelectedFeedPages(){
       fileIndex++;
     }
 
-    // 9. Trigger native Web Share API
+    // Combine distinct captions into a unified share text string
+    const shareTextCaption = Array.from(new Set(captionLines)).join("\n");
+
+    // 7. Trigger native Web Share API with files AND text caption payload
     if (navigator.canShare && navigator.canShare({ files: fileArray })) {
-      await navigator.share({ files: fileArray });
+      await navigator.share({
+        title: `LNJP Lab Reports`,
+        text: shareTextCaption,
+        files: fileArray
+      });
     } else {
       alert("Native image sharing is not supported on this browser.");
     }
