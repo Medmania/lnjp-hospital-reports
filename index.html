@@ -869,6 +869,23 @@ function closeGalleryModal() {
   document.getElementById('galleryModal').classList.remove('active');
 }
 
+// Helper to determine clean suffix based on register category
+function getCategorySuffix(rawCategory) {
+  if (!rawCategory) return "";
+  const cat = rawCategory.trim().toLowerCase();
+
+  if (cat.includes("cbc")) {
+    return cat.includes("emergency") ? " - CBC Em" : " - CBC";
+  }
+  if (cat.includes("buse") || cat.includes("lft") || cat.includes("kft")) {
+    return " - BUSE/LFT/KFT";
+  }
+  if (cat.includes("pt") || cat.includes("inr")) {
+    return " - PT/INR";
+  }
+  return ` - ${rawCategory.trim()}`;
+}
+
 async function shareSelectedFeedPages(){
   if(!selectedFeedPages.size) return alert("Select at least one page to share!");
 
@@ -878,12 +895,15 @@ async function shareSelectedFeedPages(){
 
   try {
     const fileArray = [];
-    const categoryTag = (activeFeedBatch && activeFeedBatch.category) ? activeFeedBatch.category.trim() : "";
+    const categoryRaw = (activeFeedBatch && activeFeedBatch.category) ? activeFeedBatch.category : "";
+    const categorySuffix = getCategorySuffix(categoryRaw);
     let fileIndex = 1;
 
     for (const [url, data] of selectedFeedPages.entries()) {
-      const pName = (data.patientName || "Unassigned").trim();
-      
+      const rawName = (data.patientName || "").trim();
+      const pName = rawName ? rawName : "Unassigned";
+
+      // 1. Load image into HTML Image object
       const img = new Image();
       img.crossOrigin = "anonymous";
       await new Promise((resolve, reject) => {
@@ -892,39 +912,48 @@ async function shareSelectedFeedPages(){
         img.src = url;
       });
 
+      // 2. Create offscreen canvas matching original image dimensions
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
 
+      // 3. Draw original image onto canvas
       ctx.drawImage(img, 0, 0);
 
+      // 4. Calculate responsive banner height & font size based on image height
       const bannerHeight = Math.max(60, Math.floor(img.height * 0.07));
       const fontSize = Math.max(24, Math.floor(bannerHeight * 0.45));
 
-      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+      // 5. Draw dark overlay banner at bottom
+      ctx.fillStyle = "rgba(15, 23, 42, 0.88)"; // Dark slate overlay
       ctx.fillRect(0, img.height - bannerHeight, img.width, bannerHeight);
 
-      ctx.fillStyle = "#2563eb";
+      // 6. Draw accent border line above banner
+      ctx.fillStyle = "#2563eb"; // Blue accent line
       ctx.fillRect(0, img.height - bannerHeight, img.width, Math.max(4, Math.floor(bannerHeight * 0.06)));
 
+      // 7. Stamp Patient Name + Category Suffix onto image
       ctx.fillStyle = "#ffffff";
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
 
-      const displayText = categoryTag ? `Pt: ${pName}  (${categoryTag})` : `Pt: ${pName}`;
+      const displayText = `Pt: ${pName}${categorySuffix}`;
       const paddingLeft = Math.max(20, Math.floor(img.width * 0.03));
       
       ctx.fillText(displayText, paddingLeft, img.height - (bannerHeight / 2));
 
+      // 8. Convert canvas to Blob/File
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-      const file = new File([blob], `Report_Pt_${pName.replace(/\s+/g, '_')}_${fileIndex}.jpg`, { type: 'image/jpeg' });
+      const safeFileName = `Report_Pt_${pName.replace(/\s+/g, '_')}_${fileIndex}.jpg`;
+      const file = new File([blob], safeFileName, { type: 'image/jpeg' });
       
       fileArray.push(file);
       fileIndex++;
     }
 
+    // 9. Trigger native Web Share API
     if (navigator.canShare && navigator.canShare({ files: fileArray })) {
       await navigator.share({ files: fileArray });
     } else {
