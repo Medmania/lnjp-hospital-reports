@@ -411,15 +411,32 @@ function getDirectImageUrl(url){
   return (match && match[1]) ? `https://lh3.googleusercontent.com/d/${match[1]}` : url;
 }
 
+// FORMAT DATE & 12-HOUR TIME (e.g. 2026-10-10 • 01:05 PM)
 function formatDateDisplay(rawDate) {
   if (!rawDate) return 'Today';
   try {
     const d = new Date(rawDate);
     if (isNaN(d.getTime())) return String(rawDate).split('T')[0];
+    
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+
+    const rawStr = String(rawDate);
+    const hasTime = rawStr.includes('T') || rawStr.includes(':');
+
+    if (hasTime) {
+      let hours = d.getHours();
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; 
+      const strHours = String(hours).padStart(2, '0');
+      return `${dateStr} • ${strHours}:${minutes} ${ampm}`;
+    }
+
+    return dateStr;
   } catch (e) {
     return String(rawDate).split('T')[0];
   }
@@ -612,19 +629,15 @@ function applyFilters() {
   const grid = document.getElementById('resultsGrid'), countLabel = document.getElementById('resultsCount');
   
   const filtered = rawRecords.filter(r => {
-    // 1. Normalize fields across potential backend key variations
     const descStr = String(r.description || r.title || r.batch || '').toLowerCase().trim();
     const catRaw = String(r.category || r.Register || r.register || r.categoryName || '').trim();
     const catStr = catRaw.toLowerCase();
     
-    // 2. Search Query Filter
     const matchQuery = !query || descStr.includes(query) || catStr.includes(query);
     
-    // 3. Window Filter
     const winVal = String(r.windowType || r.window || r.Window || '');
     const matchWindow = (activeWindowFilter === 'ALL') || (winVal === activeWindowFilter);
     
-    // 4. Category Filter Logic
     let matchCategory = false;
     if (activeCategoryFilter === 'ALL') {
       matchCategory = true;
@@ -634,10 +647,20 @@ function applyFilters() {
       matchCategory = descStr.includes(activeCategoryFilter.toLowerCase());
     }
     
-    // 5. Date Filter
     let matchDate = true;
-    if (activeDateFilter !== 'ALL' && r.date) {
-      matchDate = (formatDateDisplay(r.date) === activeDateFilter);
+    if (activeDateFilter !== 'ALL') {
+      const recVal = r.timestamp || r.created_at || r.date;
+      if (recVal) {
+        const d = new Date(recVal);
+        if (!isNaN(d.getTime())) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          matchDate = (`${yyyy}-${mm}-${dd}` === activeDateFilter);
+        } else {
+          matchDate = String(recVal).includes(activeDateFilter);
+        }
+      }
     }
 
     return matchQuery && matchWindow && matchCategory && matchDate;
@@ -656,7 +679,7 @@ function applyFilters() {
 
   filtered.forEach(r => {
     let badgeClass = (r.windowType || r.window) === 'Window 1' ? 'badge-w1' : 'badge-w2';
-    const formattedDate = formatDateDisplay(r.date);
+    const formattedDate = formatDateDisplay(r.timestamp || r.created_at || r.date);
     const categoryName = r.category || r.Register || r.register || '';
     
     let totalPages = 0;
@@ -872,7 +895,6 @@ function closeGalleryModal() {
   document.getElementById('galleryModal').classList.remove('active');
 }
 
-// Helper to determine clean suffix based on register category
 function getCategorySuffix(rawCategory) {
   if (!rawCategory) return "";
   const cat = rawCategory.trim().toLowerCase();
@@ -907,11 +929,9 @@ async function shareSelectedFeedPages(){
       const rawName = (data.patientName || "").trim();
       const pName = rawName ? rawName : "Unassigned";
 
-      // 1. Compile formatted text caption line for WhatsApp
       const tagText = `Pt: ${pName}${categorySuffix}`;
       captionLines.push(tagText);
 
-      // 2. Load image into HTML Image object
       const img = new Image();
       img.crossOrigin = "anonymous";
       await new Promise((resolve, reject) => {
@@ -920,7 +940,6 @@ async function shareSelectedFeedPages(){
         img.src = url;
       });
 
-      // 3. Canvas setup
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
@@ -931,15 +950,12 @@ async function shareSelectedFeedPages(){
       const bannerHeight = Math.max(60, Math.floor(img.height * 0.07));
       const fontSize = Math.max(24, Math.floor(bannerHeight * 0.45));
 
-      // 4. Draw dark overlay banner at bottom
       ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
       ctx.fillRect(0, img.height - bannerHeight, img.width, bannerHeight);
 
-      // Accent border
       ctx.fillStyle = "#2563eb";
       ctx.fillRect(0, img.height - bannerHeight, img.width, Math.max(4, Math.floor(bannerHeight * 0.06)));
 
-      // 5. Stamp Patient Name + Category Suffix on bottom banner
       ctx.fillStyle = "#ffffff";
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = "left";
@@ -948,7 +964,6 @@ async function shareSelectedFeedPages(){
       const paddingLeft = Math.max(20, Math.floor(img.width * 0.03));
       ctx.fillText(tagText, paddingLeft, img.height - (bannerHeight / 2));
 
-      // 6. Convert canvas to File
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
       const safeFileName = `Report_Pt_${pName.replace(/\s+/g, '_')}_${fileIndex}.jpg`;
       const file = new File([blob], safeFileName, { type: 'image/jpeg' });
@@ -957,10 +972,8 @@ async function shareSelectedFeedPages(){
       fileIndex++;
     }
 
-    // Combine distinct captions into a unified share text string
     const shareTextCaption = Array.from(new Set(captionLines)).join("\n");
 
-    // 7. Trigger native Web Share API with files AND text caption payload
     if (navigator.canShare && navigator.canShare({ files: fileArray })) {
       await navigator.share({
         title: `LNJP Lab Reports`,
@@ -1106,15 +1119,13 @@ function renderThumbnailTray() {
   });
 }
 
-// ==========================================
-// UPLOAD WITH COMPULSORY DESCRIPTION CHECK
-// ==========================================
+// UPLOAD BATCH WITH ISO TIMESTAMP INCLUDING TIME
 async function uploadBatchDirect() {
   if (!capturedImages.length) return alert("Capture or select photos first!");
 
   const windowType = document.getElementById('uploadWindowType').value;
   const registerCategory = document.getElementById('uploadRegisterCategory').value;
-  const selectedDate = document.getElementById('uploadDate').value;
+  const selectedDateVal = document.getElementById('uploadDate').value;
   const descriptionInput = document.getElementById('batchDescription');
   const description = descriptionInput.value.trim();
 
@@ -1122,6 +1133,14 @@ async function uploadBatchDirect() {
     alert("Please enter a Batch Title / Serial Range (e.g., '1-300' or 'Emergency CBC').");
     descriptionInput.focus();
     return;
+  }
+
+  // Create full timestamp if selecting today's date
+  let uploadTimestamp = selectedDateVal;
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  if (selectedDateVal === todayStr) {
+    uploadTimestamp = now.toISOString();
   }
 
   const statusText = document.getElementById('uploadStatusText');
@@ -1148,7 +1167,7 @@ async function uploadBatchDirect() {
         action: "upload_batch",
         window: windowType,
         category: registerCategory,
-        date: selectedDate,
+        date: uploadTimestamp,
         description: description,
         images: capturedImages
       })
